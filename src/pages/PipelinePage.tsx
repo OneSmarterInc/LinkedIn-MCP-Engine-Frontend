@@ -8,9 +8,9 @@ import { LeftOut } from "./JobsPage";
 /** Pipeline: every row from both tabs, every status. The whole Sheet, filterable. */
 export function PipelinePage() {
   const [tab, setTab] = useState<"all" | "Jobs_Pipeline" | "Pipeline">("all");
-  const rows = usePoll(() => api.pipeline(tab).then((r) => r.rows), 30_000, true, [tab]);
-  const left = usePoll(() => api.leftOut().then((r) => r.rows), 60_000);
-  const sum = usePoll(() => api.summary(), 60_000);
+  const rows = usePoll(`pipeline:${tab}`, () => api.pipeline(tab).then((r) => r.rows), 30_000);
+  const left = usePoll("leftout:all", () => api.leftOut().then((r) => r.rows), 60_000);
+  const sum = usePoll("summary", () => api.summary(), 60_000);
   const f = useRowFilters(rows.data);
   const [sel, setSel] = useState<PipelineRow | null>(null);
   const [showLeft, setShowLeft] = useState(false);

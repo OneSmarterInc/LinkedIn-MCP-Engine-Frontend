@@ -6,8 +6,8 @@ import { Err, usePoll } from "../components/ui";
 
 /** Job posts: every LinkedIn "we're hiring" post that produced a contact, plus the ones the gates left out and why. */
 export function JobsPage({ onCount }: { onCount: (n: number) => void }) {
-  const rows = usePoll(() => api.pipeline("Jobs_Pipeline").then((r) => { onCount(r.rows.filter((x) => x.status === "Ready for Review").length); return r.rows; }), 30_000);
-  const left = usePoll(() => api.leftOut().then((r) => r.rows.filter((x) => x.tab.startsWith("Jobs"))), 60_000);
+  const rows = usePoll("pipeline:Jobs_Pipeline", () => api.pipeline("Jobs_Pipeline").then((r) => { onCount(r.rows.filter((x) => x.status === "Ready for Review").length); return r.rows; }), 30_000);
+  const left = usePoll("leftout:jobs", () => api.leftOut().then((r) => r.rows.filter((x) => x.tab.startsWith("Jobs"))), 60_000);
   const f = useRowFilters(rows.data);
   const [sel, setSel] = useState<PipelineRow | null>(null);
   const [showLeft, setShowLeft] = useState(false);

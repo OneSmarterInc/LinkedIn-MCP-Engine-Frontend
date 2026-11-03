@@ -10,7 +10,7 @@ const fromCampaign = (c: Campaign): Form => ({ name: c.campaign_name, mode: c.mo
 /** Campaigns: the Campaigns tab of the Sheet. Who to look for, what to offer, how many a day. */
 export function CampaignsPage() {
   const toast = useToast();
-  const camps = usePoll(() => api.campaigns().then((r) => r.campaigns), 60_000);
+  const camps = usePoll("campaigns", () => api.campaigns().then((r) => r.campaigns), 60_000);
   const [editing, setEditing] = useState<string | null>(null); // "" = new
   const [form, setForm] = useState<Form>(empty);
   const [busy, setBusy] = useState(false);

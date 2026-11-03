@@ -18,15 +18,26 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boo
   return <button type="button" className={`sw ${on ? "on" : ""}`} aria-label={label} aria-pressed={on} onClick={() => onChange(!on)} />;
 }
 
-/** Polls a loader on an interval while `active`. */
-export function usePoll<T>(load: () => Promise<T>, ms: number, active = true, deps: unknown[] = []) {
-  const [data, setData] = useState<T | null>(null);
+/**
+ * Polls a loader on an interval while `active`. Results are kept in a module-level store keyed by `key`,
+ * so switching pages and coming back shows the last data at once and refreshes in the background.
+ */
+const store = new Map<string, unknown>();
+export function usePoll<T>(key: string, load: () => Promise<T>, ms: number, active = true) {
+  const [data, setDataState] = useState<T | null>(() => (store.has(key) ? (store.get(key) as T) : null));
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!store.has(key));
+  const setData = useCallback((v: T | null) => { if (v === null) store.delete(key); else store.set(key, v); setDataState(v); }, [key]);
   const refresh = useCallback(async () => {
-    try { setData(await load()); setError(null); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
-  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { void refresh(); if (!active) return; const h = setInterval(() => { void refresh(); }, ms); return () => clearInterval(h); }, [refresh, ms, active]);
+    try { const v = await load(); store.set(key, v); setDataState(v); setError(null); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setDataState(store.has(key) ? (store.get(key) as T) : null); setLoading(!store.has(key)); setError(null);
+    void refresh();
+    if (!active) return;
+    const h = setInterval(() => { void refresh(); }, ms);
+    return () => clearInterval(h);
+  }, [key, refresh, ms, active]);
   return { data, error, loading, refresh, setData };
 }
 

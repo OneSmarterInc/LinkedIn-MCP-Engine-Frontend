@@ -7,7 +7,7 @@ import { Err, usePoll, useToast } from "../components/ui";
 /** Review queue: only what waits for a decision, across both tabs. Keys: A approve, R reject, E/Enter open, arrows move. */
 export function QueuePage({ onCount }: { onCount: (n: number) => void }) {
   const toast = useToast();
-  const list = usePoll(() => api.pipeline("all").then((r) => { const q = r.rows.filter((x) => x.status === "Ready for Review" || x.status === "Needs Rewrite"); onCount(q.length); return q; }), 30_000);
+  const list = usePoll("queue", () => api.pipeline("all").then((r) => { const q = r.rows.filter((x) => x.status === "Ready for Review" || x.status === "Needs Rewrite"); onCount(q.length); return q; }), 30_000);
   const rows = list.data ?? [];
   const [i, setI] = useState(0);
   const [open, setOpen] = useState(false);
@@ -35,7 +35,7 @@ export function QueuePage({ onCount }: { onCount: (n: number) => void }) {
   });
 
   return <>
-    <div className="guard"><b>{rows.length} waiting.</b> Open one to read the draft, fix it if needed, then Approve. Approved rows are picked up by AutoBooker within 15 minutes. Keys: <span className="mono">↑↓</span> move, <span className="mono">E</span> open, <span className="mono">A</span> approve, <span className="mono">R</span> reject.</div>
+    <div className="guard"><b>{list.loading ? "Reading the Sheet…" : `${rows.length} waiting.`}</b> Open one to read the draft, fix it if needed, then Approve. Approved rows are picked up by AutoBooker within 15 minutes. Keys: <span className="mono">↑↓</span> move, <span className="mono">E</span> open, <span className="mono">A</span> approve, <span className="mono">R</span> reject.</div>
     <Err msg={list.error} />
     {list.loading ? <div className="empty">Reading the Sheet…</div> : <RowsTable rows={rows} selected={cur?.email} onOpen={(r) => { setI(rows.indexOf(r)); setOpen(true); }} showSignal={rows.some((r) => r.signal)} emptyText="Queue is empty. Every draft has a decision." />}
     {open && cur && <Drawer row={cur} onClose={() => setOpen(false)} onChanged={changed} />}

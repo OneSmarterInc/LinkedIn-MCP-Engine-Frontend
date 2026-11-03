@@ -5,7 +5,7 @@ import { Err, Switch, usePoll, useToast } from "../components/ui";
 /** Automation: the Config tab AutoBooker reads. Same cells, plainer words. */
 export function AutomationPage() {
   const toast = useToast();
-  const s = usePoll(() => api.settings(), 60_000, false);
+  const s = usePoll("settings", () => api.settings(), 60_000, false);
   const [v, setV] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (s.data) setV(s.data.values); }, [s.data]);

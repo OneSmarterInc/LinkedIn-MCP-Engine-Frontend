@@ -5,17 +5,18 @@ import { Err, usePoll, useToast } from "../components/ui";
 /** Runs: start a job search or a campaign run, watch it, see what it produced. Nothing here sends email. */
 export function RunsPage() {
   const toast = useToast();
-  const [searchId, setSearchId] = useState<string | null>(null);
-  const [runId, setRunId] = useState<string | null>(null);
+  const [searchId, setSearchId] = useState<string | null>(() => sessionStorage.getItem("runs:searchId"));
+  const [runId, setRunId] = useState<string | null>(() => sessionStorage.getItem("runs:runId"));
+  useEffect(() => { try { if (searchId) sessionStorage.setItem("runs:searchId", searchId); if (runId) sessionStorage.setItem("runs:runId", runId); } catch { /* ignore */ } }, [searchId, runId]);
   const [campaign, setCampaign] = useState("");
   const [limit, setLimit] = useState(10);
   const [starting, setStarting] = useState<"search" | "run" | null>(null);
 
-  const camps = usePoll(() => api.campaigns().then((r) => r.campaigns), 120_000);
-  const searches = usePoll(() => api.searches(), 20_000);
-  const runs = usePoll(() => api.runs().then((r) => r.runs), 20_000);
-  const search = usePoll<SearchRecord | null>(() => (searchId ? api.search(searchId) : Promise.resolve(null)), 3_000, true, [searchId]);
-  const run = usePoll<RunView | null>(() => (runId ? api.run(runId) : Promise.resolve(null)), 3_000, true, [runId]);
+  const camps = usePoll("campaigns", () => api.campaigns().then((r) => r.campaigns), 120_000);
+  const searches = usePoll("searches", () => api.searches(), 20_000);
+  const runs = usePoll("runs", () => api.runs().then((r) => r.runs), 20_000);
+  const search = usePoll<SearchRecord | null>(`search:${searchId ?? "none"}`, () => (searchId ? api.search(searchId) : Promise.resolve(null)), 3_000);
+  const run = usePoll<RunView | null>(`run:${runId ?? "none"}`, () => (runId ? api.run(runId) : Promise.resolve(null)), 3_000);
   const searchDone = search.data && search.data.status !== "RUNNING";
   const runDone = run.data && ["EXPORTED", "DRAFTED", "FAILED"].includes(run.data.status);
   useEffect(() => { if (searchDone) void searches.refresh(); }, [searchDone]); // eslint-disable-line react-hooks/exhaustive-deps
