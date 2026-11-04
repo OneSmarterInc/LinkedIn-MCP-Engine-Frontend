@@ -1,7 +1,9 @@
 import { useState } from "react";
 
 /** Page title and subtitle, the search box (on list pages), Refresh from Sheet, and Run job search. */
-export function Topbar({ title, subtitle, query, onQuery, showSearch, onRefresh, onRunSearch }: {
+export function Topbar({ navOpen, onToggleNav, title, subtitle, query, onQuery, showSearch, onRefresh, onRunSearch }: {
+  navOpen?: boolean;
+  onToggleNav?: () => void;
   title: string;
   subtitle: string;
   query: string;
@@ -13,7 +15,8 @@ export function Topbar({ title, subtitle, query, onQuery, showSearch, onRefresh,
   const [syncing, setSyncing] = useState(false);
   return (
     <header className="topbar">
-      <div><h1>{title}</h1><div className="sub">{subtitle}</div></div>
+      {onToggleNav && !navOpen && <button type="button" className="burger" onClick={onToggleNav} aria-label="Show menu"><span /><span /><span /></button>}
+      <div className="ttl"><h1>{title}</h1><div className="sub">{subtitle}</div></div>
       <div className="grow" />
       {showSearch && (
         <label className="search">

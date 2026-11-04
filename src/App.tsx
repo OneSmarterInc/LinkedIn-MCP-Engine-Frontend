@@ -69,6 +69,13 @@ function Console() {
   const [campaignCount, setCampaignCount] = useState<number>();
   const [runningCount, setRunningCount] = useState(0);
   const info = PAGE_INFO[page];
+  // Sidebar open/closed. Remembered per browser; starts closed on narrow screens.
+  const [navOpen, setNavOpen] = useState<boolean>(() => {
+    try { const v = localStorage.getItem("nav-open"); if (v) return v === "1"; } catch { /* private window */ }
+    return !window.matchMedia("(max-width: 860px)").matches;
+  });
+  const toggleNav = () => setNavOpen((v) => { try { localStorage.setItem("nav-open", v ? "0" : "1"); } catch { /* ignore */ } return !v; });
+  const closeNavOnMobile = () => { if (window.matchMedia("(max-width: 860px)").matches) setNavOpen(false); };
 
   useEffect(() => { document.title = `${info.title} · Outreach Console`; }, [info.title]);
   useEffect(() => { api.campaigns().then((c) => setCampaignCount(c.campaigns.length)).catch(() => {}); }, []);
@@ -77,10 +84,12 @@ function Console() {
   const onAutoStarted = useCallback(() => setAutoStart(false), []);
 
   return (
-    <div className="app">
-      <Rail page={page} campaignCount={campaignCount} runningCount={runningCount} />
+    <div className={`app ${navOpen ? "nav-open" : "nav-closed"}`}>
+      {navOpen && <div className="navscrim" onClick={() => setNavOpen(false)} />}
+      <Rail page={page} campaignCount={campaignCount} runningCount={runningCount} onToggle={toggleNav} onNavigate={closeNavOnMobile} />
       <div className="main">
         <Topbar
+          navOpen={navOpen} onToggleNav={toggleNav}
           title={info.title} subtitle={info.subtitle}
           query={query} onQuery={setQuery} showSearch={page === "jobs" || page === "pipeline"}
           onRefresh={() => refresh(true)} onRunSearch={runSearch}
