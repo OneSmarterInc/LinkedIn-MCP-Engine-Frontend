@@ -95,7 +95,7 @@ function SearchDetails({ record, onOpen }: { record: SearchRecord; onOpen: (item
                 </td>
                 <td>
                   {row && <><StatusPill status={row.status} /><div className="s">{row.subject}</div></>}
-                  {!row && held && <><Pill tone="bad">Held back</Pill><div className="s">{held.why}</div></>}
+                  {!row && held && <><Pill tone="bad">{held.failed_gate ? `Held back at gate ${held.failed_gate}` : "Held back"}</Pill><div className="s">{held.why}</div></>}
                   {!row && !held && <><Pill>Not in the Sheet</Pill><div className="s">{job.email ? "Not written by this run" : "No email, so no draft"}</div></>}
                 </td>
                 <td onClick={(e) => e.stopPropagation()}>{job.url && <a href={job.url} target="_blank" rel="noopener noreferrer">Open post</a>}</td>
@@ -114,7 +114,7 @@ function CampaignRunDetails({ run, onOpen }: { run: RunView; onOpen: (item: Draw
 
   const gate = (lead: LeadView, held?: LeftOutRow) => {
     if (lead.result === "PASSED") return <Pill tone="ok">Passed</Pill>;
-    if (lead.result.startsWith("FAILED")) return <><Pill tone="bad">Held back</Pill><div className="s">{held?.why ?? lead.result}</div></>;
+    if (lead.result.startsWith("FAILED")) return <><Pill tone="bad">{held?.failed_gate ? `Held back at gate ${held.failed_gate}` : "Held back"}</Pill><div className="s">{held?.why ?? lead.result}</div></>;
     return <Pill>Not checked yet</Pill>;
   };
 
