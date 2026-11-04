@@ -4,7 +4,7 @@ export type Page = (typeof PAGES)[number];
 
 export const PAGE_INFO: Record<Page, { label: string; title: string; subtitle: string }> = {
   queue: { label: "Review queue", title: "Review queue", subtitle: "Approve, edit or reject drafts. Approved rows are sent by AutoBooker." },
-  jobs: { label: "Job posts", title: "Job posts", subtitle: "People who said in public they are hiring, last 7 days" },
+  jobs: { label: "Job posts", title: "Job posts", subtitle: "Companies hiring now, found by job search, newest first" },
   pipeline: { label: "Pipeline", title: "Pipeline", subtitle: "Every email in flight, from both the lead and job flows" },
   campaigns: { label: "Campaigns", title: "Campaigns", subtitle: "What we look for, where, and what we offer" },
   runs: { label: "Runs", title: "Runs", subtitle: "Start a search and watch it work" },

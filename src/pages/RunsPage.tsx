@@ -123,7 +123,7 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
   const pct = search?.status === "DONE" ? 100 : search ? Math.max(5, Math.round(((stage + 0.5) / STEPS.length) * 100)) : 0;
 
   const history = useMemo(() => [
-    ...searches.map((s) => ({ key: s.search_id, at: s.started_at, kind: "Job search", camp: "Jobs", found: s.total, email: s.with_email, passed: undefined as number | undefined, sheet: s.drafts, status: s.status })),
+    ...searches.map((s) => ({ key: s.search_id, at: s.started_at, kind: "Job search", camp: "Job search", found: s.total, email: s.with_email, passed: undefined as number | undefined, sheet: s.drafts, status: s.status })),
     ...runs.map((x) => ({ key: x.run_id, at: x.created_at, kind: "Campaign run", camp: x.campaign, found: x.leads, email: undefined as number | undefined, passed: x.passed, sheet: x.drafts, status: x.status })),
   ].sort((a, b) => b.at.localeCompare(a.at)), [searches, runs]);
 

@@ -156,7 +156,7 @@ export function JobsPage({ query }: { query: string }) {
                   <td>{it.row.name ? <><div className="t">{it.row.name}</div><div className="s">{it.row.title}</div></> : <span className="s">Not identified</span>}</td>
                   <td>{it.row.email ? <><Pill tone="warn">Found</Pill><div className="s mono" style={{ fontSize: 12 }}>{it.row.email}</div></> : <Pill tone="bad">None</Pill>}</td>
                   <td><Pill tone="bad">Held back</Pill><div className="s">{it.row.why}</div></td>
-                  <td className="s">{it.row.campaign}</td>
+                  <td className="s">Job search</td>
                 </tr>
               ))}
             </tbody>
