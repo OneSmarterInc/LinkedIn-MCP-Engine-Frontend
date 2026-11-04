@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/endpoints";
 import type { CampaignSummary, RunSummary, RunView, SearchDefaults, SearchListItem, SearchRecord, SearchStage } from "../api/types";
 import { Banner, Pill } from "../components/ui";
@@ -85,7 +85,11 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
     toast(next.status === "FAILED" ? `Run failed: ${next.error}` : `Run done: ${next.counts.drafted ?? 0} drafts in the Pipeline tab`, next.status === "FAILED");
   }, 3000, runRunning);
 
+  // A ref, not state: it changes at once, so a double click or React's double effect in dev mode starts one search, not two.
+  const startingRef = useRef(false);
   const startSearch = useCallback(async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
     setStarting(true);
     try {
       const { search_id } = await api.startSearch();
@@ -95,13 +99,17 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
     } catch (e) {
       toast((e as Error).message, true);
     } finally {
+      startingRef.current = false;
       setStarting(false);
     }
   }, [toast, loadLists]);
 
   // "Run job search" in the top bar opens this page and starts a search.
+  const autoStartedRef = useRef(false);
   useEffect(() => {
-    if (!autoStart) return;
+    if (!autoStart) { autoStartedRef.current = false; return; }
+    if (autoStartedRef.current) return;
+    autoStartedRef.current = true;
     onAutoStarted();
     void startSearch();
   }, [autoStart, onAutoStarted, startSearch]);
