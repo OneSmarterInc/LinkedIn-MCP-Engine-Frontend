@@ -53,7 +53,7 @@ export function QueuePage() {
 
       <div className="card">
         {!row ? (
-          <div className="empty">Nothing waiting. New drafts arrive after a job search or a campaign run, or when you press Run job search.</div>
+          <div className="empty">Nothing waiting. New drafts arrive after a job search (Runs page → Start search).</div>
         ) : (
           <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>

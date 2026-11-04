@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/endpoints";
-import type { CampaignSummary, RunSummary, RunView, SearchDefaults, SearchListItem, SearchRecord, SearchStage } from "../api/types";
+import type { RunSummary, SearchDefaults, SearchListItem, SearchRecord, SearchStage } from "../api/types";
 import { Drawer, useLiveItem, type DrawerItem } from "../components/Drawer";
 import { RunDetails, type RunTarget } from "../components/RunDetails";
-import { Banner, Pill } from "../components/ui";
+import { Banner } from "../components/ui";
 import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
 import { usePolling } from "../hooks/usePolling";
@@ -21,18 +21,14 @@ const FALLBACK: SearchDefaults = { daysBack: 7, maxJobs: 10, maxSearches: 8, max
 const tone = (s: string) => (s === "DONE" || s === "EXPORTED" ? "ok" : s === "FAILED" ? "bad" : "warn");
 const finished = (s: string) => s === "DONE" || s === "EXPORTED" || s === "FAILED";
 
-/** Start a job search (POST /api/search) or a campaign run (POST /api/runs) and watch each step. */
-export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: boolean; onAutoStarted: () => void; onRunning: (n: number) => void }) {
+/** Start a job search (POST /api/search) and watch each step. Past campaign runs (CLI, Claude Desktop) stay listed below. */
+export function RunsPage({ onRunning }: { onRunning: (n: number) => void }) {
   const toast = useToast();
   const { refresh } = useData();
   const [search, setSearch] = useState<SearchRecord>();
   const [searches, setSearches] = useState<SearchListItem[]>([]);
   const [defaults, setDefaults] = useState<SearchDefaults>(FALLBACK);
   const [runs, setRuns] = useState<RunSummary[]>([]);
-  const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
-  const [run, setRun] = useState<RunView>();
-  const [campaign, setCampaign] = useState("");
-  const [limit, setLimit] = useState(10);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string>();
   const [details, setDetails] = useState<RunTarget>();
@@ -55,15 +51,9 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
   useEffect(() => {
     void loadLists();
     api.latestSearch().then(setSearch).catch(() => { /* no search yet */ });
-    api.campaigns().then(({ campaigns: list }) => {
-      const usable = list.filter((c) => c.status === "OK");
-      setCampaigns(usable);
-      setCampaign((cur) => cur || usable.find((c) => c.active)?.name || usable[0]?.name || "");
-    }).catch(() => { /* shown on the Campaigns page */ });
   }, [loadLists]);
 
   const searchRunning = search?.status === "RUNNING";
-  const runRunning = Boolean(run && !finished(run.status));
 
   // While something runs, ask the backend every 3 seconds. When it ends, reload the lists and the Sheet rows.
   usePolling(async () => {
@@ -79,16 +69,6 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
     else if (o) toast(`Job search done: ${o.pipeline_added} drafts are in the review queue`);
     else toast(`Job search done, but writing to the Sheet failed: ${next.result?.outreach_error ?? "unknown"}`, true);
   }, 3000, searchRunning);
-
-  usePolling(async () => {
-    if (!run) return;
-    const next = await api.run(run.run_id);
-    setRun(next);
-    if (!finished(next.status)) return;
-    void loadLists();
-    void refresh(true);
-    toast(next.status === "FAILED" ? `Run failed: ${next.error}` : `Run done: ${next.counts.drafted ?? 0} drafts in the Pipeline tab`, next.status === "FAILED");
-  }, 3000, runRunning);
 
   // A ref, not state: it changes at once, so a double click or React's double effect in dev mode starts one search, not two.
   const startingRef = useRef(false);
@@ -108,27 +88,6 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
       setStarting(false);
     }
   }, [toast, loadLists]);
-
-  // "Run job search" in the top bar opens this page and starts a search.
-  const autoStartedRef = useRef(false);
-  useEffect(() => {
-    if (!autoStart) { autoStartedRef.current = false; return; }
-    if (autoStartedRef.current) return;
-    autoStartedRef.current = true;
-    onAutoStarted();
-    void startSearch();
-  }, [autoStart, onAutoStarted, startSearch]);
-
-  const startRun = async () => {
-    try {
-      const { run_id } = await api.startRun(campaign, limit);
-      setRun(await api.run(run_id));
-      toast(`Run started for ${campaign}`);
-      void loadLists();
-    } catch (e) {
-      toast((e as Error).message, true);
-    }
-  };
 
   const p = search?.progress;
   const r = search?.result;
@@ -182,33 +141,6 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
               ))}
           </div>
         </div>
-      </div>
-
-      <div className="card prog">
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <b>Campaign run</b>
-          {run && <Pill tone={tone(run.status)}>{run.status}</Pill>}
-          {run?.message && <span className="hint">{run.message}</span>}
-        </div>
-        <div className="field">
-          <label className="field">Campaign
-            <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
-              {campaigns.length === 0 && <option value="">No valid campaign</option>}
-              {campaigns.map((c) => <option key={c.name} value={c.name}>{c.name}{c.active ? "" : " (paused)"}</option>)}
-            </select>
-          </label>
-          <label className="field">Leads <input type="number" min={1} max={100} value={limit} onChange={(e) => setLimit(Number(e.target.value))} style={{ width: 70 }} /></label>
-          <button className="btn" disabled={!campaign || runRunning} onClick={startRun}>{runRunning ? "Running…" : "Start run"}</button>
-          <span className="hint">Find leads → 5 gates → AI drafts → Pipeline tab as Ready for Review.</span>
-        </div>
-        {run && (
-          <dl className="kv">
-            <dt>Found</dt><dd>{run.counts.sourced}</dd>
-            <dt>Passed gates</dt><dd>{num(run.counts.passed)}</dd>
-            <dt>Drafted</dt><dd>{num(run.counts.drafted)}</dd>
-          </dl>
-        )}
-        {run?.error && <Banner tone="bad">{run.error}</Banner>}
       </div>
 
       <h2 className="sec">Recent runs</h2>

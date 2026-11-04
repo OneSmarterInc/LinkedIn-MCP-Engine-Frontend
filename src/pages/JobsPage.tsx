@@ -134,7 +134,7 @@ export function JobsPage({ query }: { query: string }) {
             </tr></thead>
             <tbody>
               {visible.length === 0 && (
-                <tr><td colSpan={8} className="empty">{items.length ? "No job posts match these filters." : "No job posts yet. Press Run job search."}</td></tr>
+                <tr><td colSpan={8} className="empty">{items.length ? "No job posts match these filters." : "No job posts yet. Start a search on the Runs page."}</td></tr>
               )}
               {visible.map((it) => it.kind === "row" ? (
                 <tr key={it.key} className={`row${open?.row === it.row ? " sel" : ""}`} onClick={() => setOpen({ kind: "row", row: it.row })}>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-/** Page title and subtitle, the search box (on list pages), Refresh from Sheet, and Run job search. */
-export function Topbar({ navOpen, onToggleNav, title, subtitle, query, onQuery, showSearch, onRefresh, onRunSearch }: {
+/** Page title and subtitle, the search box (on list pages), and Refresh from Sheet. */
+export function Topbar({ navOpen, onToggleNav, title, subtitle, query, onQuery, showSearch, onRefresh }: {
   navOpen?: boolean;
   onToggleNav?: () => void;
   title: string;
@@ -10,7 +10,6 @@ export function Topbar({ navOpen, onToggleNav, title, subtitle, query, onQuery, 
   onQuery: (q: string) => void;
   showSearch: boolean;
   onRefresh: () => Promise<void>;
-  onRunSearch: () => void;
 }) {
   const [syncing, setSyncing] = useState(false);
   return (
@@ -27,7 +26,6 @@ export function Topbar({ navOpen, onToggleNav, title, subtitle, query, onQuery, 
       <button className="btn" disabled={syncing} onClick={async () => { setSyncing(true); await onRefresh(); setSyncing(false); }}>
         {syncing ? "Reading the Sheet…" : "Refresh from Sheet"}
       </button>
-      <button className="btn primary" onClick={onRunSearch}>Run job search</button>
     </header>
   );
 }

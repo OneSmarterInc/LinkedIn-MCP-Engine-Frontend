@@ -65,7 +65,6 @@ function Console() {
   const { refresh } = useData();
   const page = useHashRoute(PAGES, "jobs");
   const [query, setQuery] = useState("");
-  const [autoStart, setAutoStart] = useState(false);
   const [campaignCount, setCampaignCount] = useState<number>();
   const [runningCount, setRunningCount] = useState(0);
   const info = PAGE_INFO[page];
@@ -80,9 +79,6 @@ function Console() {
   useEffect(() => { document.title = `${info.title} · Outreach Console`; }, [info.title]);
   useEffect(() => { api.campaigns().then((c) => setCampaignCount(c.campaigns.length)).catch(() => {}); }, []);
 
-  const runSearch = () => { setAutoStart(true); window.location.hash = "#runs"; };
-  const onAutoStarted = useCallback(() => setAutoStart(false), []);
-
   return (
     <div className={`app ${navOpen ? "nav-open" : "nav-closed"}`}>
       {navOpen && <div className="navscrim" onClick={() => setNavOpen(false)} />}
@@ -92,14 +88,14 @@ function Console() {
           navOpen={navOpen} onToggleNav={toggleNav}
           title={info.title} subtitle={info.subtitle}
           query={query} onQuery={setQuery} showSearch={page === "jobs" || page === "pipeline"}
-          onRefresh={() => refresh(true)} onRunSearch={runSearch}
+          onRefresh={() => refresh(true)}
         />
         <main className="content">
           {page === "jobs" && <JobsPage query={query} />}
           {page === "queue" && <QueuePage />}
           {page === "pipeline" && <PipelinePage query={query} />}
           {page === "campaigns" && <CampaignsPage onCount={setCampaignCount} />}
-          {page === "runs" && <RunsPage autoStart={autoStart} onAutoStarted={onAutoStarted} onRunning={setRunningCount} />}
+          {page === "runs" && <RunsPage onRunning={setRunningCount} />}
           {page === "automation" && <AutomationPage />}
         </main>
       </div>
