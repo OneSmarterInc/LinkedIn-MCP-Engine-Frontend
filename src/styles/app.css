@@ -241,6 +241,11 @@ h2.sec { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; colo
 .modal .mhead h2 { margin: 0; font-size: 16px; }
 .modal .mbody { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
 .modal .mfoot { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; }
+.modal .box.wide { width: min(1180px, 100%); }
+.modal .box.wide table { min-width: 860px; }
+.modal .box.wide tr.row { cursor: pointer; }
+.details-stats { display: flex; gap: 8px 20px; flex-wrap: wrap; font-size: 13px; color: var(--fg-2); }
+.details-stats b { color: var(--fg); }
 .tag { font-size: 11px; font-family: var(--mono); color: var(--fg-3); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
 .issues { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--bad); }
 .kv dd .pill { vertical-align: middle; }

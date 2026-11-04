@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/endpoints";
 import type { CampaignSummary, RunSummary, RunView, SearchDefaults, SearchListItem, SearchRecord, SearchStage } from "../api/types";
+import { Drawer, useLiveItem, type DrawerItem } from "../components/Drawer";
+import { RunDetails, type RunTarget } from "../components/RunDetails";
 import { Banner, Pill } from "../components/ui";
 import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
@@ -33,6 +35,9 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
   const [limit, setLimit] = useState(10);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string>();
+  const [details, setDetails] = useState<RunTarget>();
+  const [open, setOpen] = useState<DrawerItem>();
+  const live = useLiveItem(open);
 
   const loadLists = useCallback(async () => {
     try {
@@ -131,8 +136,8 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
   const pct = search?.status === "DONE" ? 100 : search ? Math.max(5, Math.round(((stage + 0.5) / STEPS.length) * 100)) : 0;
 
   const history = useMemo(() => [
-    ...searches.map((s) => ({ key: s.search_id, at: s.started_at, kind: "Job search", camp: "Job search", found: s.total, email: s.with_email, passed: undefined as number | undefined, sheet: s.drafts, status: s.status })),
-    ...runs.map((x) => ({ key: x.run_id, at: x.created_at, kind: "Campaign run", camp: x.campaign, found: x.leads, email: undefined as number | undefined, passed: x.passed, sheet: x.drafts, status: x.status })),
+    ...searches.map((s) => ({ target: { kind: "search", id: s.search_id } as RunTarget, key: s.search_id, at: s.started_at, kind: "Job search", camp: "Job search", found: s.total, email: s.with_email, passed: undefined as number | undefined, sheet: s.drafts, status: s.status })),
+    ...runs.map((x) => ({ target: { kind: "run", id: x.run_id } as RunTarget, key: x.run_id, at: x.created_at, kind: "Campaign run", camp: x.campaign, found: x.leads, email: undefined as number | undefined, passed: x.passed, sheet: x.drafts, status: x.status })),
   ].sort((a, b) => b.at.localeCompare(a.at)), [searches, runs]);
 
   const num = (n?: number) => (n === undefined ? "-" : n);
@@ -208,9 +213,9 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
 
       <h2 className="sec">Recent runs</h2>
       <div className="card"><div className="tablewrap"><table>
-        <thead><tr><th>Started</th><th>Kind</th><th>Campaign</th><th>Found</th><th>With email</th><th>Passed</th><th>To Sheet</th><th>Status</th></tr></thead>
+        <thead><tr><th>Started</th><th>Kind</th><th>Campaign</th><th>Found</th><th>With email</th><th>Passed</th><th>To Sheet</th><th>Status</th><th /></tr></thead>
         <tbody>
-          {history.length === 0 && <tr><td colSpan={8} className="empty">No runs yet.</td></tr>}
+          {history.length === 0 && <tr><td colSpan={9} className="empty">No runs yet.</td></tr>}
           {history.map((h) => (
             <tr key={h.key}>
               <td className="s">{whenText(h.at)}</td>
@@ -221,10 +226,13 @@ export function RunsPage({ autoStart, onAutoStarted, onRunning }: { autoStart: b
               <td className="mono">{num(h.passed)}</td>
               <td className="mono">{num(h.sheet)}</td>
               <td><span className={`pill ${tone(h.status)}`}>{h.status}</span></td>
+              <td><button className="btn sm" onClick={() => setDetails(h.target)}>Details</button></td>
             </tr>
           ))}
         </tbody>
       </table></div></div>
+      {details && <RunDetails target={details} onClose={() => setDetails(undefined)} onOpen={(item) => { setDetails(undefined); setOpen(item); }} />}
+      <Drawer item={live} onClose={() => setOpen(undefined)} />
     </section>
   );
 }

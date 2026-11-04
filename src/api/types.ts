@@ -89,6 +89,7 @@ export interface SearchRecord {
     outreach?: {
       contacts: number; passed: number; quarantined: number; drafts_ready: number;
       pipeline_added: number; quarantined_added: number;
+      pipeline_already_present?: number; drafts_need_rewrite?: number; draft_errors?: number;
     };
     outreach_error?: string;
   };
@@ -130,6 +131,26 @@ export interface RunView {
   created_at: string;
   updated_at: string;
   counts: { sourced: number; with_email?: number; passed?: number; failed?: number; drafted?: number };
+  /** One entry per lead found, with what happened to it. */
+  leads?: LeadView[];
+}
+
+/** src/mcp/run-view.ts → LeadView */
+export interface LeadView {
+  lead_id: string;
+  name: string;
+  title: string;
+  company: string;
+  company_domain?: string;
+  location: string;
+  linkedin_url?: string;
+  email?: string;
+  email_source?: string;
+  /** PASSED, NOT VERIFIED YET, or "FAILED gate 3: DOMAIN_MISMATCH". */
+  result: string;
+  draft_status?: string;
+  email_subject?: string;
+  draft_issues?: string[];
 }
 
 /** src/config/store.ts → CampaignSummary (GET /api/campaigns) */

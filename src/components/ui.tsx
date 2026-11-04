@@ -37,7 +37,7 @@ export function Loading({ text = "Reading the Sheet…" }: { text?: string }) {
   return <div className="loading"><Spinner /> {text}</div>;
 }
 
-export function Modal({ title, onClose, children, footer }: { title: string; onClose: () => void; children: ReactNode; footer: ReactNode }) {
+export function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: ReactNode; footer: ReactNode; wide?: boolean }) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", h);
@@ -47,7 +47,7 @@ export function Modal({ title, onClose, children, footer }: { title: string; onC
     <>
       <div className="scrim open" onClick={onClose} />
       <div className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
-        <div className="box" onClick={(e) => e.stopPropagation()}>
+        <div className={`box${wide ? " wide" : ""}`} onClick={(e) => e.stopPropagation()}>
           <div className="mhead"><h2>{title}</h2><button className="btn sm" style={{ marginLeft: "auto" }} onClick={onClose} aria-label="Close">×</button></div>
           <div className="mbody">{children}</div>
           <div className="mfoot">{footer}</div>
