@@ -1,68 +1,157 @@
-import { useEffect, useState } from "react";
-import { api, ageText, type PipelineRow } from "../api";
-import { Pill, useToast } from "./ui";
+import { useEffect, useState, type ReactNode } from "react";
+import type { LeftOutRow, PipelineRow } from "../api/types";
+import { useData } from "../context/DataContext";
+import { useToast } from "../context/ToastContext";
+import { draftChecks } from "../utils/draftChecks";
+import { ageText, gmailThread, withGreeting, withoutGreeting } from "../utils/format";
+import { isReviewable, sourceKind } from "../utils/jobs";
+import { Pill, StatusPill } from "./ui";
 
-/** Review one row: the hiring signal, the contact, the draft (editable while it waits), and the decision. */
-export function Drawer({ row, onClose, onChanged }: { row: PipelineRow; onClose: () => void; onChanged: (r: PipelineRow) => void }) {
+/** What the drawer shows: a pipeline row, or a row that was held back. */
+export type DrawerItem = { kind: "row"; row: PipelineRow } | { kind: "left-out"; row: LeftOutRow };
+
+/** Keeps the open row in step with the latest data, so a status change shows at once. */
+export function useLiveItem(item?: DrawerItem): DrawerItem | undefined {
+  const { rows } = useData();
+  if (item?.kind !== "row") return item;
+  const fresh = rows.find((r) => r.tab === item.row.tab && r.email === item.row.email);
+  return fresh ? { kind: "row", row: fresh } : item;
+}
+
+/** The right-hand review panel from the design: signal, contact, editable draft, checks, actions. */
+export function Drawer({ item, onClose }: { item?: DrawerItem; onClose: () => void }) {
+  const open = Boolean(item);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  return (
+    <>
+      <div className={`scrim${open ? " open" : ""}`} onClick={onClose} />
+      <aside className={`drawer${open ? " open" : ""}`} aria-label="Review" aria-hidden={!open}>
+        {item?.kind === "row" && <RowReview key={`${item.row.tab}:${item.row.email}:${item.row.status}`} row={item.row} onClose={onClose} />}
+        {item?.kind === "left-out" && <LeftOutView row={item.row} onClose={onClose} />}
+      </aside>
+    </>
+  );
+}
+
+function Header({ title, sub, onClose }: { title: string; sub: string; onClose: () => void }) {
+  return (
+    <div className="dhead">
+      <div><h2>{title}</h2><div className="s">{sub}</div></div>
+      <button className="x" onClick={onClose} aria-label="Close">×</button>
+    </div>
+  );
+}
+
+function RowReview({ row, onClose }: { row: PipelineRow; onClose: () => void }) {
+  const { act, saveDraft } = useData();
   const toast = useToast();
+  const editable = isReviewable(row.status);
   const [subject, setSubject] = useState(row.subject);
-  const [body, setBody] = useState(row.body.replace(/^Hi [^,\n]+,\s*/i, ""));
+  const [body, setBody] = useState(withoutGreeting(row.body));
   const [busy, setBusy] = useState(false);
-  useEffect(() => { setSubject(row.subject); setBody(row.body.replace(/^Hi [^,\n]+,\s*/i, "")); }, [row.email, row.subject, row.body]);
+  const fullBody = withGreeting(row.name, body);
+  const dirty = subject !== row.subject || fullBody.trim() !== row.body.trim();
+  const checks = draftChecks(row, subject, body);
+  const isJob = row.tab === "Jobs_Pipeline";
 
-  const editable = row.status === "Ready for Review" || row.status === "Needs Rewrite";
-  const first = row.name.split(" ")[0] ?? "";
-  const checks: Array<[string, boolean]> = row.body ? [
-    ["Names the company", body.toLowerCase().includes(row.company.toLowerCase().split(/\s+/)[0] ?? "")],
-    ...(row.signal ? [["Names the role", body.toLowerCase().includes((row.signal.role.toLowerCase().split(/\s+/).pop() ?? ""))] as [string, boolean]] : []),
-    ["4 sentences", (body.match(/[.!?](\s|$)/g) || []).length === 4],
-    ["Ends with a question", body.trim().endsWith("?")],
-  ] : [];
+  const title = row.signal ? `${row.signal.role} at ${row.company}` : `${row.name || row.email} at ${row.company}`;
+  const sub = [
+    isJob ? (sourceKind(row) === "post" ? "LinkedIn post" : "Job listing") : "Lead campaign",
+    row.signal ? ageText(row.signal.posted) : "",
+    row.tab,
+  ].filter(Boolean).join(" · ");
 
-  async function act(kind: "approve" | "reject" | "reopen" | "save") {
-    setBusy(true);
-    try {
-      if (kind === "save" || kind === "approve") {
-        if (editable && (subject !== row.subject || `Hi ${first},\n\n${body}` !== row.body)) await api.saveDraft(row.email, { subject, body: `Hi ${first},\n\n${body}` });
-      }
-      const r = kind === "approve" ? await api.approve(row.email) : kind === "reject" ? await api.reject(row.email) : kind === "reopen" ? await api.reopen(row.email) : { ...row, subject, body: `Hi ${first},\n\n${body}` };
-      onChanged(r);
-      toast(kind === "approve" ? `Approved. AutoBooker sends to ${row.email} within 15 minutes.` : kind === "reject" ? "Rejected. Nothing will be sent." : kind === "reopen" ? "Back to Ready for Review." : "Draft saved to the Sheet.");
-      if (kind !== "save") onClose();
-    } catch (e) { toast((e as Error).message, true); } finally { setBusy(false); }
+  const run = async (fn: () => Promise<unknown>) => { setBusy(true); try { await fn(); } finally { setBusy(false); } };
+  const save = async () => Boolean(await saveDraft(row, subject, fullBody));
+  const approve = () => run(async () => {
+    if (dirty && !(await save())) return;
+    if (await act(row, "approve")) onClose();
+  });
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(row.email); toast("Email copied"); } catch { toast("Select the address to copy it"); }
+  };
+
+  const foot: ReactNode[] = [];
+  if (editable) {
+    foot.push(
+      <button key="a" className="btn primary" disabled={busy} onClick={approve}>Approve · sends within 15 min</button>,
+      <button key="s" className="btn" disabled={busy || !dirty} onClick={() => run(save)}>Save edits</button>,
+      <button key="r" className="btn danger" disabled={busy} onClick={() => run(async () => { if (await act(row, "reject")) onClose(); })}>Reject</button>,
+    );
+  } else if (row.status === "Approved") {
+    foot.push(
+      <button key="u" className="btn" disabled={busy || Boolean(row.thread_id)} onClick={() => run(() => act(row, "reopen"))}>Undo approval</button>,
+      <span key="n" className="note">Queued. AutoBooker picks it up on the next 15-minute cycle and writes Sent and the thread id back to the Sheet.</span>,
+    );
+  } else if (row.status === "Rejected") {
+    foot.push(<button key="o" className="btn" disabled={busy} onClick={() => run(() => act(row, "reopen"))}>Restore to Ready for Review</button>);
+  } else if (row.thread_id) {
+    foot.push(<a key="g" className="btn" href={gmailThread(row.thread_id)} target="_blank" rel="noopener noreferrer">Answer by hand in Gmail</a>);
+    foot.push(<span key="n" className="note">{row.status === "Sent" ? "Sent. Replies are read every 10 minutes." : row.status === "Replied" ? "They replied. AutoBooker offered times or left it for you; see the Notes column in the Sheet." : row.status === "Meeting Booked" ? "The invite is on the calendar." : ""}</span>);
   }
+  if (row.signal?.url) foot.push(<a key="l" className="btn" href={row.signal.url} target="_blank" rel="noopener noreferrer">Open on LinkedIn</a>);
 
-  return <>
-    <div className="scrim" onClick={onClose} />
-    <aside className="drawer" aria-label="Review">
-      <div className="dhead">
-        <div><h2>{row.signal ? `${row.signal.role} at ${row.company}` : `${row.name} at ${row.company}`}</h2><div className="s">{row.tab === "Jobs_Pipeline" ? "Job post" : "Lead"} · {row.domain || "no domain"}</div></div>
-        <button className="x" onClick={onClose} aria-label="Close">×</button>
-      </div>
+  return (
+    <>
+      <Header title={title} sub={sub} onClose={onClose} />
       <div className="dbody">
-        {row.signal && <div className="signal"><b>Hiring signal</b> · {row.signal.role}{row.signal.posted ? ` · posted ${row.signal.posted}` : ""}{row.signal.url && <> · <a href={row.signal.url} target="_blank" rel="noopener">open the post</a></>}</div>}
+        {row.signal && (
+          <div className="signal">
+            <b>Hiring signal</b> · {sourceKind(row) === "post" ? `${row.name || "Someone"} posted` : "Listing posted"} {ageText(row.signal.posted)}: “{row.signal.role}”
+            {row.signal.url && <> · <a className="mono" href={row.signal.url} target="_blank" rel="noopener noreferrer">{row.signal.url.replace(/^https?:\/\/(www\.)?/, "")}</a></>}
+          </div>
+        )}
         <dl className="kv">
-          <dt>Contact</dt><dd>{row.name}{row.title ? `, ${row.title}` : ""}</dd>
-          <dt>Email</dt><dd><span className="mono">{row.email}</span> <button className="btn sm" onClick={() => navigator.clipboard?.writeText(row.email).then(() => toast("Copied")).catch(() => toast("Select the address to copy it"))}>Copy</button></dd>
-          <dt>Status</dt><dd><Pill s={row.status} />{row.thread_id && <span className="hint"> · thread {row.thread_id.slice(0, 10)}…</span>}</dd>
+          <dt>Contact</dt><dd>{row.name ? `${row.name}${row.title ? `, ${row.title}` : ""}` : "Not identified yet"}</dd>
+          <dt>Email</dt><dd><span className="email">{row.email} <button className="btn sm" onClick={copy}>Copy</button></span></dd>
+          <dt>Gates</dt><dd><Pill tone="ok">5 of 5 passed</Pill> <span className="hint">domain, not a role account, entity, mailbox</span></dd>
+          <dt>Status</dt><dd><StatusPill status={row.status} />{row.thread_id && <span className="hint"> · thread {row.thread_id.slice(0, 10)}…</span>}</dd>
           {row.research && !row.signal && <><dt>Research</dt><dd className="s">{row.research}</dd></>}
         </dl>
-        {row.body ? <div>
-          <div className="hint" style={{ marginBottom: 6 }}>{editable ? "Draft (editable until approved)" : "Email as sent"}</div>
-          <div className="draft">
-            <div className="subj">Subject: <input value={subject} onChange={(e) => setSubject(e.target.value)} readOnly={!editable} /></div>
-            <div style={{ padding: "8px 12px 0", color: "var(--fg-3)", fontSize: 13 }}>Hi {first},</div>
-            <textarea value={body} onChange={(e) => setBody(e.target.value)} readOnly={!editable} />
+        {row.body ? (
+          <div>
+            <div className="hint" style={{ marginBottom: 6 }}>{editable ? "Draft (editable before approval)" : "Email"}</div>
+            <div className="draft">
+              <div className="subj">Subject: <input value={subject} onChange={(e) => setSubject(e.target.value)} readOnly={!editable} aria-label="Subject" /></div>
+              <div style={{ padding: "8px 12px 0", color: "var(--fg-3)", fontSize: 13 }}>Hi {row.name.split(" ")[0] || "there"},</div>
+              <textarea value={body} onChange={(e) => setBody(e.target.value)} readOnly={!editable} aria-label="Email body" />
+            </div>
+            <div className="checks" style={{ marginTop: 8 }}>
+              {checks.map(([label, ok]) => <span key={label} className={`pill ${ok ? "ok" : "bad"}`}>{ok ? "✓" : "✗"} {label}</span>)}
+            </div>
           </div>
-          <div className="checks" style={{ marginTop: 8 }}>{checks.map(([k, ok]) => <span key={k} className={`pill ${ok ? "ok" : "bad"}`}>{ok ? "✓" : "✗"} {k}</span>)}</div>
-        </div> : <div className="hint">No draft on this row.</div>}
+        ) : (
+          <div className="hint">No draft on this row.</div>
+        )}
       </div>
-      <div className="dfoot">
-        {editable && <><button className="btn primary" disabled={busy} onClick={() => act("approve")}>Approve · sends within 15 min</button><button className="btn" disabled={busy} onClick={() => act("save")}>Save edits</button><button className="btn danger" disabled={busy} onClick={() => act("reject")}>Reject</button></>}
-        {row.status === "Approved" && <><button className="btn" disabled={busy} onClick={() => act("reopen")}>Undo approval</button><span className="note">Queued. AutoBooker picks it up on its next 15-minute cycle and writes Sent and the thread id back to the Sheet.</span></>}
-        {row.status === "Rejected" && <button className="btn" disabled={busy} onClick={() => act("reopen")}>Restore to Ready for Review</button>}
-        {["Sent", "Replied", "Meeting Booked", "Sending"].includes(row.status) && <span className="note">{row.status === "Sent" ? "Sent. Replies are read every 10 minutes." : row.status === "Replied" ? "They replied. AutoBooker offered times or left it for you; see the Notes column in the Sheet." : row.status === "Meeting Booked" ? "Invite is on the calendar." : "Sending now."}</span>}
+      <div className="dfoot">{foot}</div>
+    </>
+  );
+}
+
+function LeftOutView({ row, onClose }: { row: LeftOutRow; onClose: () => void }) {
+  return (
+    <>
+      <Header title={row.company || "Unknown company"} sub={`${row.tab} · stopped at gate ${row.failed_gate || "?"}`} onClose={onClose} />
+      <div className="dbody">
+        <div className="signal"><b>Not sent:</b> {row.why} <span className="tag">{row.reason}</span></div>
+        <dl className="kv">
+          <dt>Contact</dt><dd>{row.name ? `${row.name}${row.title ? `, ${row.title}` : ""}` : "Not identified"}</dd>
+          <dt>Email</dt><dd>{row.email || <Pill tone="bad">None</Pill>}</dd>
+          <dt>Gates</dt><dd><Pill tone="bad">Stopped at gate {row.failed_gate || "?"}</Pill> <span className="hint">{row.reason}</span></dd>
+          <dt>Location</dt><dd>{row.location || "-"}</dd>
+          <dt>Campaign</dt><dd>{row.campaign}</dd>
+          <dt>Run</dt><dd className="mono" style={{ fontSize: 12 }}>{row.run_id}</dd>
+        </dl>
+        <div className="hint">Held-back leads are never emailed. A later search may find a different contact at this company.</div>
       </div>
-    </aside>
-  </>;
+      <div className="dfoot"><button className="btn" onClick={onClose}>Close</button></div>
+    </>
+  );
 }

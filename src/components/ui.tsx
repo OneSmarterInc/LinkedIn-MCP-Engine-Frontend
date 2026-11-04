@@ -1,44 +1,58 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { statusKind } from "../api";
+import { useEffect, type ReactNode } from "react";
+import { statusTone, type Tone } from "../utils/format";
 
-/** Toast context: one line of feedback for every action. */
-const ToastCtx = createContext<(msg: string, bad?: boolean) => void>(() => {});
-export const useToast = () => useContext(ToastCtx);
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [t, setT] = useState<{ msg: string; bad: boolean } | null>(null);
-  const show = useCallback((msg: string, bad = false) => { setT({ msg, bad }); }, []);
-  useEffect(() => { if (!t) return; const h = setTimeout(() => setT(null), 3000); return () => clearTimeout(h); }, [t]);
-  const v = useMemo(() => show, [show]);
-  return <ToastCtx.Provider value={v}>{children}{t && <div className={`toast ${t.bad ? "bad" : ""}`} role="status">{t.msg}</div>}</ToastCtx.Provider>;
+export function Pill({ tone = "neutral", children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
+  return <span className={`pill ${tone}`} title={title}>{children}</span>;
 }
 
-export const Pill = ({ s, children }: { s: string; children?: ReactNode }) => <span className={`pill ${statusKind(s)}`}>{children ?? s}</span>;
-
-export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
-  return <button type="button" className={`sw ${on ? "on" : ""}`} aria-label={label} aria-pressed={on} onClick={() => onChange(!on)} />;
+export function StatusPill({ status }: { status: string }) {
+  return <Pill tone={statusTone(status)}>{status || "No status"}</Pill>;
 }
 
-/**
- * Polls a loader on an interval while `active`. Results are kept in a module-level store keyed by `key`,
- * so switching pages and coming back shows the last data at once and refreshes in the background.
- */
-const store = new Map<string, unknown>();
-export function usePoll<T>(key: string, load: () => Promise<T>, ms: number, active = true) {
-  const [data, setDataState] = useState<T | null>(() => (store.has(key) ? (store.get(key) as T) : null));
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(!store.has(key));
-  const setData = useCallback((v: T | null) => { if (v === null) store.delete(key); else store.set(key, v); setDataState(v); }, [key]);
-  const refresh = useCallback(async () => {
-    try { const v = await load(); store.set(key, v); setDataState(v); setError(null); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+export function Stat({ label, value, small, hot }: { label: string; value: ReactNode; small?: ReactNode; hot?: boolean }) {
+  return (
+    <div className={`stat${hot ? " hot" : ""}`}>
+      <div className="k">{label}</div>
+      <div className="v">{value}{small !== undefined && <small>{small}</small>}</div>
+    </div>
+  );
+}
+
+export function Switch({ on, onChange, label, disabled }: { on: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
+  return (
+    <button
+      type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled}
+      className={`sw${on ? " on" : ""}`} onClick={() => onChange(!on)}
+    />
+  );
+}
+
+export function Banner({ tone, children, action }: { tone: "bad" | "warn" | "info"; children: ReactNode; action?: ReactNode }) {
+  return <div className={`banner ${tone}`} role={tone === "bad" ? "alert" : "status"}><div className="grow">{children}</div>{action}</div>;
+}
+
+export const Spinner = () => <span className="spin" aria-hidden="true" />;
+
+export function Loading({ text = "Reading the Sheet…" }: { text?: string }) {
+  return <div className="loading"><Spinner /> {text}</div>;
+}
+
+export function Modal({ title, onClose, children, footer }: { title: string; onClose: () => void; children: ReactNode; footer: ReactNode }) {
   useEffect(() => {
-    setDataState(store.has(key) ? (store.get(key) as T) : null); setLoading(!store.has(key)); setError(null);
-    void refresh();
-    if (!active) return;
-    const h = setInterval(() => { void refresh(); }, ms);
-    return () => clearInterval(h);
-  }, [key, refresh, ms, active]);
-  return { data, error, loading, refresh, setData };
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+  return (
+    <>
+      <div className="scrim open" onClick={onClose} />
+      <div className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
+        <div className="box" onClick={(e) => e.stopPropagation()}>
+          <div className="mhead"><h2>{title}</h2><button className="btn sm" style={{ marginLeft: "auto" }} onClick={onClose} aria-label="Close">×</button></div>
+          <div className="mbody">{children}</div>
+          <div className="mfoot">{footer}</div>
+        </div>
+      </div>
+    </>
+  );
 }
-
-export const Err = ({ msg }: { msg: string | null }) => (msg ? <div className="err">{msg}</div> : null);
