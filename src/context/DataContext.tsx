@@ -59,16 +59,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async (fresh = false) => {
     const mine = ++seq.current;
+    // All three requests start at once, but the page does not wait for all three: the drafts show as soon as
+    // the rows arrive; held-back rows and the counts fill in a moment later.
+    const rowsReq = api.pipeline("all", fresh);
+    const restReq = Promise.all([api.leftOut(), api.summary()]);
+    restReq.catch(() => {}); // awaited below; this only stops an "unhandled rejection" if the rows request fails first
     try {
-      const [p, l, s] = await Promise.all([api.pipeline("all", fresh), api.leftOut(), api.summary()]);
+      const p = await rowsReq;
       if (mine !== seq.current) return;
       setRows(p.rows);
-      setLeftOut(l.rows);
-      setSummary(s);
       setSyncedAt(Date.now());
       setError(undefined);
+      setLoading(false);
+      const [l, s] = await restReq;
+      if (mine !== seq.current) return;
+      setLeftOut(l.rows);
+      setSummary(s);
     } catch (e) {
-      setError((e as Error).message);
+      if (mine === seq.current) setError((e as Error).message);
     } finally {
       setLoading(false);
     }
