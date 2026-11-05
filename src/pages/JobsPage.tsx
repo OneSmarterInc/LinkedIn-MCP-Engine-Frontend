@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LeftOutRow, PipelineRow } from "../api/types";
 import { Drawer, useLiveItem, type DrawerItem } from "../components/Drawer";
 import { Banner, Loading, Pill, Stat, StatusPill } from "../components/ui";
@@ -57,6 +57,9 @@ export function JobsPage({ query }: { query: string }) {
     }).sort((a, b) => (b.posted ?? "").localeCompare(a.posted ?? ""));
   }, [items, query, filters]);
 
+  // A new search or filter empties the selection, so a tick on a row that is now hidden cannot survive.
+  useEffect(() => { setSelected(new Set()); }, [query, filters]);
+
   if (loading) return <Loading />;
 
   const jobRows = items.filter((i): i is Extract<Item, { kind: "row" }> => i.kind === "row");
@@ -65,8 +68,9 @@ export function JobsPage({ query }: { query: string }) {
   const today = new Date().toDateString();
   const creditsToday = latestSearch && new Date(latestSearch.started_at).toDateString() === today
     ? latestSearch.result?.seamless_lookups_used ?? latestSearch.progress?.lookups_used ?? 0 : 0;
-  const selectedRows = jobRows.filter((i) => selected.has(i.key)).map((i) => i.row);
-  const selectable = visible.filter((i) => i.kind === "row");
+  const selectable = visible.filter((i): i is Extract<Item, { kind: "row" }> => i.kind === "row");
+  // Bulk actions touch only rows that are ticked AND on screen right now; a hidden row is never changed.
+  const selectedRows = selectable.filter((i) => selected.has(i.key)).map((i) => i.row);
   const toggle = (key: string) => setSelected((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
 
   /** The backend changes one row per call; bulk is one call per selected row. */

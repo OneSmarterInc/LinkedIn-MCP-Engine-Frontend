@@ -1,18 +1,27 @@
 import { useState } from "react";
 import { api } from "../../api/endpoints";
-import type { CampaignBody } from "../../api/types";
+import { PROVIDERS, type CampaignBody, type Provider } from "../../api/types";
 import { Banner, Modal, Switch } from "../../components/ui";
 import { useToast } from "../../context/ToastContext";
 import type { CampaignRow } from "./CampaignsPage";
 
 const split = (s: string) => s.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
 
+const PROVIDER_LABELS: Record<Provider, string> = {
+  gemini_xray: "LinkedIn profile search (gemini_xray)",
+  job_search: "LinkedIn job posts (job_search)",
+  csv_import: "A CSV file (csv_import)",
+  apify_or_apollo: "Apify or Apollo (apify_or_apollo)",
+};
+const isProvider = (v: unknown): v is Provider => (PROVIDERS as readonly string[]).includes(String(v));
+
 function initial(row?: CampaignRow): CampaignBody {
   const c = row?.config;
   return {
     name: row?.summary.name ?? "",
     mode: c?.mode ?? "CORPORATE",
-    provider: c?.sourcing_provider === "csv_import" ? "csv_import" : "gemini_xray",
+    // Show the stored provider as it is, so editing another field never changes it.
+    provider: isProvider(c?.sourcing_provider) ? c.sourcing_provider : "gemini_xray",
     titles: c?.decision_maker_titles ?? [],
     states: c?.target_geography ?? [],
     keywords: c?.industry_keywords ?? [],
@@ -36,14 +45,17 @@ export function CampaignForm({ original, onClose, onSaved }: { original?: Campai
   const set = <K extends keyof CampaignBody>(k: K, v: CampaignBody[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   const save = async () => {
+    // On edit, an emptied box is sent as "" so the backend clears the cell (undefined would mean "leave it").
+    // On create, an empty box is left out so the backend applies its defaults.
+    const text = (v?: string) => { const t = v?.trim() ?? ""; return t || (original ? "" : undefined); };
     const body: CampaignBody = {
       ...form,
       name: form.name.trim(),
       titles: split(lists.titles),
       states: split(lists.states),
       keywords: split(lists.keywords),
-      persona: form.persona?.trim() || undefined,
-      signal_query: form.signal_query?.trim() || undefined,
+      persona: text(form.persona),
+      signal_query: text(form.signal_query),
     };
     setBusy(true);
     setError(undefined);
@@ -75,9 +87,8 @@ export function CampaignForm({ original, onClose, onSaved }: { original?: Campai
           <option value="CANDIDATE">CANDIDATE: job seekers</option>
         </select>
         <label htmlFor="c-provider">Find leads with</label>
-        <select id="c-provider" value={form.provider} onChange={(e) => set("provider", e.target.value as CampaignBody["provider"])}>
-          <option value="gemini_xray">LinkedIn search (gemini_xray)</option>
-          <option value="csv_import">A CSV file (csv_import)</option>
+        <select id="c-provider" value={form.provider} onChange={(e) => set("provider", e.target.value as Provider)}>
+          {PROVIDERS.map((p) => <option key={p} value={p}>{PROVIDER_LABELS[p]}</option>)}
         </select>
         <label htmlFor="c-titles">Titles</label>
         <input id="c-titles" value={lists.titles} placeholder="CFO, VP Human Resources" onChange={(e) => setLists({ ...lists, titles: e.target.value })} />

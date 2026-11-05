@@ -178,11 +178,15 @@ export interface Campaign {
   daily_send_cap: number;
 }
 
+/** Every provider the backend's SourcingProvider enum accepts (src/config/schema.ts). Keep in step. */
+export const PROVIDERS = ["gemini_xray", "job_search", "csv_import", "apify_or_apollo"] as const;
+export type Provider = (typeof PROVIDERS)[number];
+
 /** Body of POST /api/campaigns and PATCH /api/campaigns/:name */
 export interface CampaignBody {
   name: string;
   mode: "CORPORATE" | "CANDIDATE";
-  provider: "gemini_xray" | "csv_import";
+  provider: Provider;
   titles: string[];
   states: string[];
   keywords: string[];
