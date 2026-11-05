@@ -27,6 +27,7 @@ export function QueuePage() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.repeat) return; // a held-down key must not approve row after row
       if (open || e.metaKey || e.ctrlKey || e.altKey || /^(input|textarea|select)$/i.test((e.target as HTMLElement).tagName)) return;
       const k = e.key.toLowerCase();
       if (k === "a") void decide("approve");
@@ -53,7 +54,7 @@ export function QueuePage() {
 
       <div className="card">
         {!row ? (
-          <div className="empty">Nothing waiting. New drafts arrive after a job search (Runs page → Start search).</div>
+          <div className="empty">Nothing waiting. New drafts arrive after a job search or a campaign run, or when you press Run job search.</div>
         ) : (
           <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
