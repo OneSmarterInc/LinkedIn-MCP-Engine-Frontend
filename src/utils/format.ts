@@ -13,12 +13,22 @@ export function statusTone(status: string): Tone {
   }
 }
 
-/** Days since a "YYYY-MM-DD…" date, or undefined when there is none. */
+/**
+ * Whole calendar days between a "YYYY-MM-DD…" date and today, or undefined when there is none.
+ * Compares dates, not hours: a post dated yesterday is 1 day old at 09:00 as well as at 15:00.
+ */
 export function daysAgo(date?: string | null, now = new Date()): number | undefined {
   if (!date) return undefined;
-  const d = new Date(`${date.slice(0, 10)}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return undefined;
-  return Math.max(0, Math.floor((now.getTime() - d.getTime()) / 86_400_000));
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date.trim());
+  let posted: number;
+  if (m) posted = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  else {
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return undefined;
+    posted = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(0, Math.round((today - posted) / 86_400_000));
 }
 
 /** "today", "1 d ago", "5 d ago", or "date unknown". */

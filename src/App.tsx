@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, getToken, setToken } from "./api/client";
+import { ApiError, getToken, setToken, UNAUTHORIZED_EVENT } from "./api/client";
 import { api } from "./api/endpoints";
 import { Rail } from "./components/layout/Rail";
 import { Topbar } from "./components/layout/Topbar";
@@ -19,6 +19,7 @@ import { PAGE_INFO, PAGES } from "./pages/routes";
 export function App() {
   const [state, setState] = useState<"checking" | "down" | "token" | "ready">("checking");
   const [message, setMessage] = useState("");
+  const [tokenNote, setTokenNote] = useState("");
 
   const check = useCallback(async () => {
     setState("checking");
@@ -35,21 +36,28 @@ export function App() {
     }
   }, []);
   useEffect(() => { void check(); }, [check]);
+  // Any 401 later on (token changed on the server, or cleared here) brings the sign-in box back instead of a dead console.
+  useEffect(() => {
+    const back = () => { setTokenNote("The saved token was not accepted. Paste the current API_TOKEN."); setState("token"); };
+    window.addEventListener(UNAUTHORIZED_EVENT, back);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, back);
+  }, []);
 
   if (state === "checking") return <Loading text="Connecting to the backend…" />;
   if (state === "down") {
     return <div style={{ padding: 24, maxWidth: 640 }}><Banner tone="bad" action={<button className="btn" onClick={check}>Try again</button>}>{message}</Banner></div>;
   }
-  if (state === "token") return <TokenGate onDone={check} />;
+  if (state === "token") return <TokenGate note={tokenNote} onDone={() => { setTokenNote(""); void check(); }} />;
   return <ToastProvider><DataProvider><Console /></DataProvider></ToastProvider>;
 }
 
 /** Shown when the backend has API_TOKEN set. The token stays in this browser. */
-function TokenGate({ onDone }: { onDone: () => void }) {
+function TokenGate({ note, onDone }: { note?: string; onDone: () => void }) {
   const [value, setValue] = useState(getToken());
   return (
     <div style={{ padding: 24, maxWidth: 440, display: "flex", flexDirection: "column", gap: 12 }}>
       <h1 style={{ fontSize: 18, margin: 0 }}>Outreach Console</h1>
+      {note && <Banner tone="bad">{note}</Banner>}
       <p className="hint">This backend asks for a token. Paste the API_TOKEN from the backend's .env file. It is kept in this browser only.</p>
       <form style={{ display: "flex", gap: 8 }} onSubmit={(e) => { e.preventDefault(); setToken(value.trim()); onDone(); }}>
         <input type="password" autoFocus aria-label="API token" value={value} onChange={(e) => setValue(e.target.value)}

@@ -23,6 +23,9 @@ export class ApiError extends Error {
 
 const BACKEND_DOWN = "Cannot reach the backend. Start it with `npm run api` in the backend folder.";
 
+/** Fired on window when the backend answers 401 after start-up (token changed or removed). App.tsx listens and shows the sign-in box. */
+export const UNAUTHORIZED_EVENT = "outreach:unauthorized";
+
 export async function request<T>(method: "GET" | "POST" | "PUT" | "PATCH", path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
   const token = getToken();
@@ -40,6 +43,11 @@ export async function request<T>(method: "GET" | "POST" | "PUT" | "PATCH", path:
   let data: unknown;
   try { data = text ? JSON.parse(text) : undefined; } catch { data = undefined; }
 
+  if (res.status === 401) {
+    // The saved token is no longer accepted: forget it and send the app back to the sign-in box.
+    setToken("");
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+  }
   if (!res.ok) {
     const fromServer = (data as { error?: string } | undefined)?.error;
     const msg = fromServer ?? (res.status === 502 || res.status === 504 || res.status === 500 && !text ? BACKEND_DOWN : `Request failed (${res.status}).`);
