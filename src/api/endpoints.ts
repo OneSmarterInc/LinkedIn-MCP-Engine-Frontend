@@ -1,6 +1,6 @@
 import { request } from "./client";
 import type {
-  Campaign, CampaignBody, CampaignSummary, Health, LeftOutRow, PipelineRow, RunSummary, RunView,
+  Campaign, CampaignBody, CampaignDetail, CampaignSummary, Health, LeftOutRow, PipelineRow, RunSummary, RunView,
   SearchDefaults, SearchListItem, SearchRecord, Settings, Summary,
 } from "./types";
 
@@ -40,7 +40,7 @@ export const api = {
   run: (id: string) => request<RunView>("GET", `/api/runs/${e(id)}`),
 
   // ---- campaigns (the Campaigns tab) ----
-  campaigns: () => request<{ campaigns: CampaignSummary[] }>("GET", "/api/campaigns"),
+  campaigns: () => request<{ campaigns: CampaignDetail[] }>("GET", "/api/campaigns"),
   campaign: (name: string) => request<Campaign>("GET", `/api/campaigns/${e(name)}`),
   createCampaign: (body: CampaignBody) => request<CampaignSummary>("POST", "/api/campaigns", body),
   updateCampaign: (name: string, body: Partial<CampaignBody>) => request<CampaignSummary>("PATCH", `/api/campaigns/${e(name)}`, body),

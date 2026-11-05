@@ -17,6 +17,10 @@ export interface PipelineRow {
   subject: string;
   body: string;
   thread_id: string;
+  /** When the draft was written to the Sheet (ISO, from the backend ledger). Missing for rows older than the ledger. */
+  drafted_at?: string;
+  /** The campaign that wrote the row (from the ledger). */
+  campaign?: string;
   /** Parsed from the Research cell when the row came from a job post. */
   signal?: { role: string; posted?: string; url?: string };
   /** The Status cell as written in the Sheet. `status` is what to show: "Send Error" when AutoBooker recorded a failed send. */
