@@ -70,10 +70,10 @@ function TokenGate({ note, onDone }: { note?: string; onDone: () => void }) {
 
 /** The layout from the design: rail on the left, top bar, and the current page. */
 function Console() {
-  const { refresh } = useData();
-  const page = useHashRoute(PAGES, "queue");
+  const { refresh, campaigns } = useData();
+  const page = useHashRoute(PAGES, "jobs");
   const [query, setQuery] = useState("");
-  const [campaignCount, setCampaignCount] = useState<number>();
+  const campaignCount = campaigns?.length;
   const [runningCount, setRunningCount] = useState(0);
   const info = PAGE_INFO[page];
   // Sidebar open/closed. Remembered per browser; starts closed on narrow screens.
@@ -85,7 +85,6 @@ function Console() {
   const closeNavOnMobile = () => { if (window.matchMedia("(max-width: 860px)").matches) setNavOpen(false); };
 
   useEffect(() => { document.title = `${info.title} · Outreach Console`; }, [info.title]);
-  useEffect(() => { api.campaigns().then((c) => setCampaignCount(c.campaigns.length)).catch(() => {}); }, []);
 
   return (
     <div className={`app ${navOpen ? "nav-open" : "nav-closed"}`}>
@@ -102,7 +101,7 @@ function Console() {
           {page === "jobs" && <JobsPage query={query} />}
           {page === "queue" && <QueuePage />}
           {page === "pipeline" && <PipelinePage query={query} />}
-          {page === "campaigns" && <CampaignsPage onCount={setCampaignCount} />}
+          {page === "campaigns" && <CampaignsPage />}
           {page === "runs" && <RunsPage onRunning={setRunningCount} />}
           {page === "automation" && <AutomationPage />}
         </main>

@@ -25,10 +25,6 @@ export interface PipelineRow {
   send_state?: string;
   notes?: string;
   sent_at?: string;
-  /** When the draft was written to the Sheet (from the backend's ledger). Missing for older rows. */
-  drafted_at?: string;
-  /** The campaign that wrote the row (from the ledger). */
-  campaign?: string;
 }
 
 /** src/api/services/sheet-rows.ts → QuarantineRow ("left out") */
@@ -165,6 +161,10 @@ export interface LeadView {
 
 /** src/config/store.ts → CampaignSummary (GET /api/campaigns) */
 export interface CampaignSummary { name: string; active: boolean; mode: string; status: string; rowNumber: number }
+/** GET /api/campaigns: each row with its settings (or the reason it cannot be used), from one read of the tab. */
+export interface CampaignDetail extends CampaignSummary { config?: Campaign; error?: string }
+/** A campaign as the pages use it: the row summary plus its full settings, or the reason it cannot be read. */
+export interface CampaignRow { summary: CampaignSummary; config?: Campaign; error?: string }
 
 /** src/config/schema.ts → CampaignConfig (GET /api/campaigns/:name) */
 export interface Campaign {

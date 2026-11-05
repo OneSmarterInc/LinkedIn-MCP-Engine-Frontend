@@ -1,36 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../../api/endpoints";
-import type { Campaign, CampaignSummary } from "../../api/types";
+import type { CampaignRow } from "../../api/types";
 import { Banner, Loading, Switch } from "../../components/ui";
+import { useData } from "../../context/DataContext";
 import { useToast } from "../../context/ToastContext";
 import { CampaignForm } from "./CampaignForm";
 
-/** A campaign row from the Campaigns tab with its full settings (or the reason it cannot be read). */
-export interface CampaignRow { summary: CampaignSummary; config?: Campaign; error?: string }
+export type { CampaignRow } from "../../api/types";
 
 /** Same rows as the Campaigns tab. Edits here write to the Sheet and are validated by the engine before they save. */
-export function CampaignsPage({ onCount }: { onCount: (n: number) => void }) {
+export function CampaignsPage() {
   const toast = useToast();
-  const [list, setList] = useState<CampaignRow[]>();
-  const [error, setError] = useState<string>();
+  // The list lives in the shared store, so coming back to this tab shows it at once; a quiet refresh runs behind it.
+  const { campaigns: list, campaignsError: error, refreshCampaigns: load } = useData();
   const [editing, setEditing] = useState<{ row?: CampaignRow }>();
-
-  const load = useCallback(async () => {
-    try {
-      const { campaigns } = await api.campaigns();
-      // The list holds names and status; each campaign's offer, states and titles come from GET /api/campaigns/:name.
-      const rows = await Promise.all(campaigns.map(async (summary): Promise<CampaignRow> => {
-        try { return { summary, config: await api.campaign(summary.name) }; }
-        catch (e) { return { summary, error: (e as Error).message }; }
-      }));
-      setList(rows);
-      onCount(rows.length);
-      setError(undefined);
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }, [onCount]);
-  useEffect(() => { void load(); }, [load]);
+  // Coming back to the tab: show the kept list now and refresh it quietly. On the first visit the store is already loading it.
+  useEffect(() => { if (list) void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = async (row: CampaignRow, active: boolean) => {
     const { name } = row.summary;
