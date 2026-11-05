@@ -81,7 +81,7 @@ function Console() {
 
   return (
     <div className={`app ${navOpen ? "nav-open" : "nav-closed"}`}>
-      {navOpen && <div className="navscrim" onClick={() => setNavOpen(false)} />}
+      {navOpen && <div className="navscrim" onClick={toggleNav} />}
       <Rail page={page} campaignCount={campaignCount} runningCount={runningCount} onToggle={toggleNav} onNavigate={closeNavOnMobile} />
       <div className="main">
         <Topbar

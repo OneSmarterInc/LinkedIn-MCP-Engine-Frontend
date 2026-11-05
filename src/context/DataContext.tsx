@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode, useRef } from "react";
 import { ApiError } from "../api/client";
 import { api } from "../api/endpoints";
 import type { LeftOutRow, PipelineRow, SearchRecord, Summary } from "../api/types";
@@ -53,9 +53,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string>();
   const [syncedAt, setSyncedAt] = useState<number>();
 
+  // Each refresh and each local change gets a number. A refresh that started before a newer refresh or a local
+  // change (approve, reject, edit) drops its answer, so a slow 60 s poll cannot undo a row just changed.
+  const seq = useRef(0);
+
   const refresh = useCallback(async (fresh = false) => {
+    const mine = ++seq.current;
     try {
       const [p, l, s] = await Promise.all([api.pipeline("all", fresh), api.leftOut(), api.summary()]);
+      if (mine !== seq.current) return;
       setRows(p.rows);
       setLeftOut(l.rows);
       setSummary(s);
@@ -74,8 +80,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => { void refresh(); }, [refresh]);
   usePolling(() => refresh(), 60_000);
 
-  const replace = (updated: PipelineRow) =>
+  const replace = (updated: PipelineRow) => {
+    seq.current++;
     setRows((rs) => rs.map((r) => (r.tab === updated.tab && r.email === updated.email ? updated : r)));
+  };
 
   const act = useCallback(async (row: PipelineRow, action: Action) => {
     try {

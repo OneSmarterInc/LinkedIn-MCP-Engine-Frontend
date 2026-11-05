@@ -20,6 +20,12 @@ const STEPS: [label: string, stages: SearchStage[]][] = [
 const FALLBACK: SearchDefaults = { daysBack: 7, maxJobs: 10, maxSearches: 8, maxSeamlessLookups: 10 };
 const tone = (s: string) => (s === "DONE" || s === "EXPORTED" ? "ok" : s === "FAILED" ? "bad" : "warn");
 const finished = (s: string) => s === "DONE" || s === "EXPORTED" || s === "FAILED";
+/**
+ * A campaign run from Claude Desktop or the CLI can stop at VERIFIED or DRAFTED (export off, or steps not continued).
+ * After 10 minutes with no change it is no longer counted as running.
+ */
+const stillRunning = (x: { status: string; updated_at: string }, now = Date.now()) =>
+  !finished(x.status) && !((x.status === "VERIFIED" || x.status === "DRAFTED") && now - new Date(x.updated_at).getTime() > 10 * 60_000);
 
 /** Start a job search (POST /api/search) and watch each step. Past campaign runs (CLI, Claude Desktop) stay listed below. */
 export function RunsPage({ onRunning }: { onRunning: (n: number) => void }) {
@@ -41,7 +47,7 @@ export function RunsPage({ onRunning }: { onRunning: (n: number) => void }) {
       setSearches(s.searches);
       setDefaults(s.defaults);
       setRuns(r.runs);
-      onRunning(s.searches.filter((x) => x.status === "RUNNING").length + r.runs.filter((x) => !finished(x.status)).length);
+      onRunning(s.searches.filter((x) => x.status === "RUNNING").length + r.runs.filter((x) => stillRunning(x)).length);
       setError(undefined);
     } catch (e) {
       setError((e as Error).message);
