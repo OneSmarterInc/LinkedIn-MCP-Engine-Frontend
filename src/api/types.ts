@@ -19,6 +19,12 @@ export interface PipelineRow {
   thread_id: string;
   /** Parsed from the Research cell when the row came from a job post. */
   signal?: { role: string; posted?: string; url?: string };
+  /** The Status cell as written in the Sheet. `status` is what to show: "Send Error" when AutoBooker recorded a failed send. */
+  sheet_status?: string;
+  /** AutoBooker's own columns; empty until it has handled the row. */
+  send_state?: string;
+  notes?: string;
+  sent_at?: string;
 }
 
 /** src/api/services/sheet-rows.ts → QuarantineRow ("left out") */

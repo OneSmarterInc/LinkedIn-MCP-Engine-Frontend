@@ -84,6 +84,12 @@ function RowReview({ row, onClose }: { row: PipelineRow; onClose: () => void }) 
       <button key="s" className="btn" disabled={busy || !dirty} onClick={() => run(save)}>Save edits</button>,
       <button key="r" className="btn danger" disabled={busy} onClick={() => run(async () => { if (await act(row, "reject")) onClose(); })}>Reject</button>,
     );
+  } else if (row.status === "Send Error") {
+    foot.push(
+      <button key="t" className="btn primary" disabled={busy} onClick={() => run(() => act(row, "reopen"))}>Retry send</button>,
+      <button key="r" className="btn danger" disabled={busy} onClick={() => run(async () => { if (await act(row, "reject")) onClose(); })}>Reject</button>,
+      <span key="n" className="note">Gmail could not send this one; AutoBooker has stopped trying. Retry puts it back to Ready for Review with the error cleared; approve it again and AutoBooker sends on its next cycle.</span>,
+    );
   } else if (row.status === "Approved") {
     foot.push(
       <button key="u" className="btn" disabled={busy || Boolean(row.thread_id)} onClick={() => run(() => act(row, "reopen"))}>Undo approval</button>,
@@ -112,6 +118,7 @@ function RowReview({ row, onClose }: { row: PipelineRow; onClose: () => void }) 
           <dt>Email</dt><dd><span className="email">{row.email} <button className="btn sm" onClick={copy}>Copy</button></span></dd>
           <dt>Gates</dt><dd><Pill tone="ok">5 of 5 passed</Pill> <span className="hint">domain, not a role account, entity, mailbox</span></dd>
           <dt>Status</dt><dd><StatusPill status={row.status} />{row.thread_id && <span className="hint"> · thread {row.thread_id.slice(0, 10)}…</span>}</dd>
+          {row.notes && <><dt>AutoBooker</dt><dd className="s" style={row.status === "Send Error" ? { color: "var(--bad)" } : undefined}>{row.notes}</dd></>}
           {row.research && !row.signal && <><dt>Research</dt><dd className="s">{row.research}</dd></>}
         </dl>
         {row.body ? (

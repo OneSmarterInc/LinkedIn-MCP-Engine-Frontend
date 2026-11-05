@@ -16,7 +16,7 @@ type Item =
 
 const STATUS_CHIPS: [value: string, label: string][] = [
   ["", "All status"], ["Ready for Review", "Ready for Review"], ["Needs Rewrite", "Needs Rewrite"], ["Approved", "Approved"],
-  ["Sent", "Sent"], ["Replied", "Replied"], ["Rejected", "Rejected"], ["Quarantined", "Held back"],
+  ["Sent", "Sent"], ["Replied", "Replied"], ["Send Error", "Send error"], ["Rejected", "Rejected"], ["Quarantined", "Held back"],
 ];
 
 interface Filters { family: string; age: string; email: string; src: string; status: string }
@@ -94,6 +94,7 @@ export function JobsPage({ query }: { query: string }) {
         <Stat label="With email" value={withEmail} small={items.length ? `${Math.round((withEmail / items.length) * 100)}%` : undefined} />
         <Stat label="Ready for review" value={jobRows.filter((i) => isReviewable(i.status)).length} />
         <Stat label="Approved, waiting to send" value={jobRows.filter((i) => i.status === "Approved").length} />
+        {jobRows.some((i) => i.status === "Send Error") && <Stat hot label="Send errors" value={jobRows.filter((i) => i.status === "Send Error").length} />}
         <Stat label="Seamless credits today" value={creditsToday} small="of 10" />
       </div>
 
