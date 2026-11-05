@@ -265,3 +265,17 @@ a.btn.primary { color: var(--accent-fg); }
 .signal a { color: var(--accent); }
 .view { display: flex; flex-direction: column; gap: 16px; }
 .toast.bad { background: var(--bad); color: #fff; }
+
+/* Review queue: 10 drafts per page, newest run first */
+.qbar { padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.pager { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.qrun { margin: 6px 2px -4px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--fg-3); }
+.qrun b { color: var(--fg-2); font-weight: 600; }
+.qcard { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; cursor: default; border: 1px solid var(--line); }
+.qcard.chosen { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.qhead { display: flex; gap: 12px; align-items: flex-start; }
+.qhead > div:first-child { flex: 1; min-width: 0; }
+.qname { font-size: 17px; font-weight: 600; }
+.qnum { white-space: nowrap; }
+.qbody { padding: 12px 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; width: 100%; box-sizing: border-box; }
+.qactions { display: flex; gap: 8px; flex-wrap: wrap; }

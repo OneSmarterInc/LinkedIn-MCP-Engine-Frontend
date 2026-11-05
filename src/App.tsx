@@ -71,7 +71,7 @@ function TokenGate({ note, onDone }: { note?: string; onDone: () => void }) {
 /** The layout from the design: rail on the left, top bar, and the current page. */
 function Console() {
   const { refresh } = useData();
-  const page = useHashRoute(PAGES, "jobs");
+  const page = useHashRoute(PAGES, "queue");
   const [query, setQuery] = useState("");
   const [campaignCount, setCampaignCount] = useState<number>();
   const [runningCount, setRunningCount] = useState(0);
