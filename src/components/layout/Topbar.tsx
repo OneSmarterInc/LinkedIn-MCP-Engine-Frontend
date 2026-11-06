@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-/** Page title and subtitle, the search box (on list pages), and Refresh from Sheet. */
-export function Topbar({ navOpen, onToggleNav, title, subtitle, query, onQuery, showSearch, onRefresh }: {
+/** Page title and subtitle, the search box (on list pages), and Refresh from Sheet (not on pages that show no Sheet data). */
+export function Topbar({ navOpen, onToggleNav, title, subtitle, query, onQuery, showSearch, showRefresh = true, onRefresh }: {
   navOpen?: boolean;
   onToggleNav?: () => void;
   title: string;
@@ -9,6 +9,7 @@ export function Topbar({ navOpen, onToggleNav, title, subtitle, query, onQuery, 
   query: string;
   onQuery: (q: string) => void;
   showSearch: boolean;
+  showRefresh?: boolean;
   onRefresh: () => Promise<void>;
 }) {
   const [syncing, setSyncing] = useState(false);
@@ -23,9 +24,11 @@ export function Topbar({ navOpen, onToggleNav, title, subtitle, query, onQuery, 
           <input type="search" value={query} onChange={(e) => onQuery(e.target.value)} placeholder="Search company, role, person, city" aria-label="Search" />
         </label>
       )}
-      <button className="btn" disabled={syncing} onClick={async () => { setSyncing(true); await onRefresh(); setSyncing(false); }}>
-        {syncing ? "Reading the Sheet…" : "Refresh from Sheet"}
-      </button>
+      {showRefresh && (
+        <button className="btn" disabled={syncing} onClick={async () => { setSyncing(true); await onRefresh(); setSyncing(false); }}>
+          {syncing ? "Reading the Sheet…" : "Refresh from Sheet"}
+        </button>
+      )}
     </header>
   );
 }

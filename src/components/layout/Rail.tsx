@@ -16,7 +16,7 @@ const ICONS: Record<Page, ReactElement> = {
 };
 const GROUP_BEFORE: Partial<Record<Page, string>> = { queue: "Work", campaigns: "Set up", users: "People" };
 
-/** The dark left rail from the design: brand, the six pages with counts, and the Sheet status at the bottom. */
+/** The dark left rail from the design: brand, the pages with counts, the Sheet status, and the signed-in person at the bottom. */
 export function Rail({ page, campaignCount, runningCount, onToggle, onNavigate, hide = [] }: { page: Page; campaignCount?: number; runningCount?: number; onToggle?: () => void; onNavigate?: () => void; hide?: readonly Page[] }) {
   const { rows, leftOut, settings, syncedAt } = useData();
   const { me, accounts, signOut } = useAuth();
@@ -45,6 +45,13 @@ export function Rail({ page, campaignCount, runningCount, onToggle, onNavigate, 
           </a>
         </Fragment>
       ))}
+      <div className="foot">
+        <b>Google Sheet</b><br />
+        {syncedAt ? `Last sync ${sinceText(new Date(syncedAt).toISOString())}` : "Not synced yet"}<br />
+        Sender: AutoBooker, every 15 min<br />
+        {live === undefined ? "Settings not read yet" : live ? "Live sending" : "Dry run: nothing is sent"}<br />
+        {settings ? `Daily cap ${settings.DailySendCap || 20}, sent in total ${sentTotal}` : ""}
+      </div>
       {accounts && me && (
         <div className="who">
           <div className="t">{me.user.full_name}</div>
@@ -52,13 +59,6 @@ export function Rail({ page, campaignCount, runningCount, onToggle, onNavigate, 
           <button type="button" className="btn sm" onClick={() => void signOut()}>Sign out</button>
         </div>
       )}
-      <div className="foot">
-        <b>Google Sheet</b><br />
-        {syncedAt ? `Last sync ${sinceText(new Date(syncedAt).toISOString())}` : "Not synced yet"}<br />
-        Sender: AutoBooker, every 15 min<br />
-        {live === undefined ? "Settings not read yet" : live ? "Live sending" : "Dry run: nothing is sent"}<br />
-        {settings ? `Daily cap ${settings.DailySendCap || 20}, sent so far ${sentTotal}` : ""}
-      </div>
     </nav>
   );
 }

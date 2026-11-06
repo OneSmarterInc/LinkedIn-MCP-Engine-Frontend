@@ -163,6 +163,7 @@ function Console() {
           navOpen={navOpen} onToggleNav={toggleNav}
           title={info.title} subtitle={info.subtitle}
           query={query} onQuery={setQuery} showSearch={page === "jobs" || page === "pipeline"}
+          showRefresh={page !== "users"}
           onRefresh={() => refresh(true)}
         />
         <main className="content">
