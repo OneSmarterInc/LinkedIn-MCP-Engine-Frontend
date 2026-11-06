@@ -4,7 +4,7 @@ import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
 import { draftChecks } from "../utils/draftChecks";
 import { ageText, gmailThread, withGreeting, withoutGreeting } from "../utils/format";
-import { isReviewable, sourceKind } from "../utils/jobs";
+import { boardFromUrl, isReviewable, sourceKind } from "../utils/jobs";
 import { Pill, StatusPill } from "./ui";
 
 /** What the drawer shows: a pipeline row, or a row that was held back. */
@@ -62,7 +62,7 @@ function RowReview({ row, onClose }: { row: PipelineRow; onClose: () => void }) 
 
   const title = row.signal ? `${row.signal.role} at ${row.company}` : `${row.name || row.email} at ${row.company}`;
   const sub = [
-    isJob ? (sourceKind(row) === "post" ? "LinkedIn post" : "Job listing") : "Lead campaign",
+    isJob ? (sourceKind(row) === "post" ? "LinkedIn post" : `Job listing${boardFromUrl(row.signal?.url) ? ` on ${boardFromUrl(row.signal?.url)}` : ""}`) : "Lead campaign",
     row.signal ? ageText(row.signal.posted) : "",
     row.tab,
   ].filter(Boolean).join(" · ");

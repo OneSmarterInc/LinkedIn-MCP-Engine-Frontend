@@ -3,6 +3,7 @@ import { api } from "../api/endpoints";
 import type { JobView, LeadView, LeftOutRow, PipelineRow, RunView, SearchRecord } from "../api/types";
 import { useData } from "../context/DataContext";
 import { ageText, whenText } from "../utils/format";
+import { boardLabel, boardsText, skipsText } from "../utils/jobs";
 import type { DrawerItem } from "./Drawer";
 import { Banner, Loading, Modal, Pill, StatusPill } from "./ui";
 
@@ -75,6 +76,8 @@ function SearchDetails({ record, onOpen }: { record: SearchRecord; onOpen: (item
         {o && <span>Held back <b>{o.quarantined_added}</b></span>}
         {o?.pipeline_already_present ? <span>Already in the Sheet <b>{o.pipeline_already_present}</b></span> : null}
       </div>
+      {r && boardsText(r.posts_by_board, r.posts_on_monster) && <div className="s" style={{ marginBottom: 6 }}>Posts by board: {boardsText(r.posts_by_board, r.posts_on_monster)}</div>}
+      {r && skipsText(r.skipped_by_reason) && <div className="s" style={{ marginBottom: 10 }}>Not kept: {skipsText(r.skipped_by_reason)}</div>}
       {record.error && <Banner tone="bad">{record.error}</Banner>}
       {r?.outreach_error && <Banner tone="bad">Writing to the Sheet failed: {r.outreach_error}</Banner>}
       <div className="tablewrap"><table>
@@ -87,7 +90,7 @@ function SearchDetails({ record, onOpen }: { record: SearchRecord; onOpen: (item
             return (
               <tr key={`${job.url}:${i}`} className={open ? "row" : ""} onClick={open} title={open ? "Open in the review panel" : undefined}>
                 <td><span className="age">{ageText(job.posted_date_unconfirmed)}</span></td>
-                <td><div className="t">{job.job_title}</div><div className="s">{job.location}</div></td>
+                <td><div className="t">{job.job_title}</div><div className="s">{job.location}{job.board ? ` · ${boardLabel(job.board)}` : ""}</div></td>
                 <td><div className="t">{job.company}</div><div className="s">{job.company_domain}</div></td>
                 <td>{job.contact_name ? <><div className="t">{job.contact_name}</div><div className="s">{job.contact_title}</div></> : <span className="s">Not identified</span>}</td>
                 <td>

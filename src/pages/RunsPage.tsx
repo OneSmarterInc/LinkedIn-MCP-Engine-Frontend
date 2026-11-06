@@ -1,3 +1,4 @@
+import { boardsText, skipsText } from "../utils/jobs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/endpoints";
 import type { RunSummary, SearchDefaults, SearchListItem, SearchRecord, SearchStage } from "../api/types";
@@ -129,6 +130,8 @@ export function RunsPage({ onRunning }: { onRunning: (n: number) => void }) {
             <dt>With email</dt><dd>{r?.with_email ?? p?.with_email ?? 0}</dd>
             <dt>Credits used</dt><dd>{r?.seamless_lookups_used ?? p?.lookups_used ?? 0}</dd>
             {r?.outreach && <><dt>To the Sheet</dt><dd>{r.outreach.pipeline_added} drafts, {r.outreach.quarantined_added} held back</dd></>}
+            {r && boardsText(r.posts_by_board, r.posts_on_monster) && <><dt>Posts by board</dt><dd>{boardsText(r.posts_by_board, r.posts_on_monster)}</dd></>}
+            {r && skipsText(r.skipped_by_reason) && <><dt>Not kept</dt><dd>{skipsText(r.skipped_by_reason)}</dd></>}
           </dl>
           {search?.status === "FAILED" && <Banner tone="bad">{search.error}</Banner>}
           {r?.outreach_error && <Banner tone="bad">Writing to the Sheet failed: {r.outreach_error}</Banner>}

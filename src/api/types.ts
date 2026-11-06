@@ -69,7 +69,11 @@ export interface JobView {
   description: string;
   url: string;
   email: string | null;
-  email_source: "seamless_poster" | "seamless_recruiter" | "not_found" | "lookup_limit" | "seamless_off";
+  email_source: "seamless_poster" | "seamless_recruiter" | "not_found" | "lookup_limit" | "seamless_off" | "lookup_error";
+  /** Board the post was read from: indeed, linkedin, monster, monster_apify, google_jobs. */
+  board?: string;
+  /** Every site the post is listed on, when known. */
+  boards?: string[];
   contact_name?: string;
   contact_title?: string;
 }
@@ -96,6 +100,11 @@ export interface SearchRecord {
     with_email: number;
     seamless_lookups_used: number;
     jobs: JobView[];
+    /** Posts each board returned, before any skipping. */
+    posts_by_board?: Record<string, number>;
+    posts_on_monster?: number;
+    /** Why posts were not kept, counted by reason. */
+    skipped_by_reason?: Record<string, number>;
     outreach?: {
       contacts: number; passed: number; quarantined: number; drafts_ready: number;
       pipeline_added: number; quarantined_added: number;

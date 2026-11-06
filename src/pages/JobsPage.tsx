@@ -6,7 +6,7 @@ import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
 import { useStoredState } from "../hooks/useStoredState";
 import { ageText, daysAgo } from "../utils/format";
-import { isReviewable, roleFamily, sourceKind } from "../utils/jobs";
+import { boardFromUrl, isReviewable, roleFamily, sourceKind } from "../utils/jobs";
 import { api } from "../api/endpoints";
 
 /** One line of the list: a drafted row from Jobs_Pipeline, or a row held back in Jobs_Quarantine. */
@@ -144,7 +144,7 @@ export function JobsPage({ query }: { query: string }) {
               {visible.map((it) => it.kind === "row" ? (
                 <tr key={it.key} className={`row${open?.row === it.row ? " sel" : ""}`} onClick={() => setOpen({ kind: "row", row: it.row })}>
                   <td onClick={(e) => e.stopPropagation()}><input type="checkbox" aria-label="Select" checked={selected.has(it.key)} onChange={() => toggle(it.key)} /></td>
-                  <td><span className={`age${daysAgo(it.posted) === 0 ? " fresh" : ""}`}>{ageText(it.posted)}</span><div className="src">{sourceKind(it.row)}</div></td>
+                  <td><span className={`age${daysAgo(it.posted) === 0 ? " fresh" : ""}`}>{ageText(it.posted)}</span><div className="src">{sourceKind(it.row)}{boardFromUrl(it.row.signal?.url) ? ` · ${boardFromUrl(it.row.signal?.url)}` : ""}</div></td>
                   <td><div className="t">{it.role}</div><div className="s">{it.family}</div></td>
                   <td><div className="t">{it.row.company}</div><div className="s">{it.row.domain}</div></td>
                   <td>{it.row.name ? <><div className="t">{it.row.name}</div><div className="s">{it.row.title}</div></> : <span className="s">Not identified</span>}</td>
