@@ -27,7 +27,8 @@ const BACKEND_DOWN = "Cannot reach the backend. Start it with `npm run api` in t
 export const UNAUTHORIZED_EVENT = "outreach:unauthorized";
 
 export async function request<T>(method: "GET" | "POST" | "PUT" | "PATCH", path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = { Accept: "application/json" };
+  // The backend refuses changes without this header: a form on another site cannot add it, the console always does.
+  const headers: Record<string, string> = { Accept: "application/json", "X-Requested-With": "outreach-console" };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers["Content-Type"] = "application/json";

@@ -279,3 +279,28 @@ a.btn.primary { color: var(--accent-fg); }
 .qnum { white-space: nowrap; }
 .qbody { padding: 12px 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; width: 100%; box-sizing: border-box; }
 .qactions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---- sign-in screens and the people block in the rail ---- */
+.gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--bg); }
+.gatecard { width: 100%; max-width: 420px; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+.gatecard h1 { font-size: 18px; margin: 4px 0 0; }
+.gatecard > .s { margin: 0; }
+.gatecard .codes { margin: 0; }
+.gatebrand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--fg-2); }
+.gatebrand .mark { width: 24px; height: 24px; border-radius: 7px; background: var(--accent); color: var(--accent-fg); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+.gateform { display: flex; flex-direction: column; gap: 10px; }
+.gatefield { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--fg-2); }
+.gatefield input { padding: 8px 10px; border: 1px solid var(--line-2); border-radius: var(--r-sm); font: inherit; background: var(--surface); }
+.gateform .btn.primary { width: 100%; justify-content: center; padding: 9px 12px; }
+.gatefoot { font-size: 13px; color: var(--fg-3); border-top: 1px solid var(--line); padding-top: 10px; text-align: center; }
+.codes { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; line-height: 1.6; user-select: all; }
+.qrwrap { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 6px 0 2px; }
+.qr { border: 1px solid var(--line); border-radius: var(--r-sm); background: #fff; padding: 6px; display: block; }
+.qrwrap .key { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 12px; font-size: 13px; letter-spacing: .02em; word-spacing: .15em; line-height: 1.6; max-width: 100%; white-space: nowrap; }
+.steps-plain { margin: 0; padding-left: 20px; color: var(--fg-2); font-size: 13px; line-height: 1.7; }
+.rail .who { margin-top: auto; padding: 10px; border-top: 1px solid var(--rail-line); font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+.rail .who .t { color: var(--rail-fg); font-weight: 500; }
+.rail .who .s { color: var(--fg-3); font-size: 12px; }
+.rail .who .btn { align-self: flex-start; margin-top: 4px; background: transparent; color: var(--rail-fg); border-color: var(--rail-line); box-shadow: none; }
+.rail .who .btn:hover { border-color: var(--fg-3); background: rgba(255,255,255,.06); }
+.rail .who + .foot { margin-top: 0; }

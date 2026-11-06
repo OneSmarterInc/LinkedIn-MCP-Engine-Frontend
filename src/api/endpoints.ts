@@ -1,6 +1,6 @@
 import { request } from "./client";
 import type {
-  Campaign, CampaignBody, CampaignDetail, CampaignSummary, Health, LeftOutRow, PipelineRow, RunSummary, RunView,
+  AuditRow, AuthUser, Campaign, CampaignBody, CampaignDetail, CampaignSummary, Health, LeftOutRow, LoginNext, Me, PipelineRow, Role, RunSummary, RunView,
   SearchDefaults, SearchListItem, SearchRecord, Settings, Summary,
 } from "./types";
 
@@ -14,6 +14,24 @@ const e = encodeURIComponent;
 export const api = {
   // ---- health ----
   health: () => request<Health>("GET", "/api/health"),
+
+  // ---- accounts ----
+  me: () => request<Me>("GET", "/api/auth/me"),
+  register: (b: { full_name: string; email: string; password: string; confirm: string }) => request<{ status: "pending" | "active" }>("POST", "/api/auth/register", b),
+  login: (b: { email: string; password: string }) => request<LoginNext>("POST", "/api/auth/login", b),
+  enroll2fa: (code: string) => request<{ user: AuthUser; recovery_codes: string[] }>("POST", "/api/auth/2fa/enroll", { code }),
+  verify2fa: (code: string) => request<{ user: AuthUser; recovery_codes_left: number }>("POST", "/api/auth/2fa/verify", { code }),
+  logout: () => request<{ ok: true }>("POST", "/api/auth/logout", {}),
+  forgot: (email: string) => request<{ ok: true; message: string }>("POST", "/api/auth/forgot", { email }),
+  resetPassword: (b: { token: string; password: string; confirm: string }) => request<{ ok: true }>("POST", "/api/auth/reset", b),
+  testMail: () => request<{ ok: true; to: string; from: string }>("POST", "/api/auth/test-mail", {}),
+  users: () => request<{ users: AuthUser[]; pending: number }>("GET", "/api/users"),
+  approveUser: (id: string, role: Role) => request<{ user: AuthUser }>("POST", `/api/users/${id}/approve`, { role }),
+  rejectUser: (id: string, reason?: string) => request<{ ok: true }>("POST", `/api/users/${id}/reject`, { reason }),
+  disableUser: (id: string) => request<{ user: AuthUser }>("POST", `/api/users/${id}/disable`, {}),
+  enableUser: (id: string) => request<{ user: AuthUser }>("POST", `/api/users/${id}/enable`, {}),
+  setRole: (id: string, role: Role) => request<{ user: AuthUser }>("POST", `/api/users/${id}/role`, { role }),
+  audit: (limit = 100) => request<{ rows: AuditRow[] }>("GET", `/api/audit?limit=${limit}`),
 
   // ---- pipeline rows (Jobs_Pipeline + Pipeline) ----
   pipeline: (tab: "all" | "Jobs_Pipeline" | "Pipeline" = "all", fresh = false) =>

@@ -1,4 +1,5 @@
 import { Fragment, type ReactElement } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { useData } from "../../context/DataContext";
 import { sinceText } from "../../utils/format";
 import { isReviewable } from "../../utils/jobs";
@@ -11,13 +12,16 @@ const ICONS: Record<Page, ReactElement> = {
   campaigns: <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.5"/><circle cx="10" cy="10" r="3"/><circle cx="10" cy="10" r=".8"/></svg>,
   runs: <svg viewBox="0 0 20 20"><path d="M6 4.5v11l9-5.5z"/></svg>,
   automation: <svg viewBox="0 0 20 20"><path d="M11 3L5 11h4.5L9 17l6-8h-4.5z"/></svg>,
+  users: <svg viewBox="0 0 20 20"><circle cx="8" cy="7" r="3"/><path d="M2.5 16c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><circle cx="14.5" cy="8" r="2.2"/><path d="M14 11.8c2 .2 3.3 1.5 3.7 3.7"/></svg>,
 };
-const GROUP_BEFORE: Partial<Record<Page, string>> = { queue: "Work", campaigns: "Set up" };
+const GROUP_BEFORE: Partial<Record<Page, string>> = { queue: "Work", campaigns: "Set up", users: "People" };
 
 /** The dark left rail from the design: brand, the six pages with counts, and the Sheet status at the bottom. */
-export function Rail({ page, campaignCount, runningCount, onToggle, onNavigate }: { page: Page; campaignCount?: number; runningCount?: number; onToggle?: () => void; onNavigate?: () => void }) {
+export function Rail({ page, campaignCount, runningCount, onToggle, onNavigate, hide = [] }: { page: Page; campaignCount?: number; runningCount?: number; onToggle?: () => void; onNavigate?: () => void; hide?: readonly Page[] }) {
   const { rows, leftOut, settings, syncedAt } = useData();
+  const { me, accounts, signOut } = useAuth();
   const counts: Partial<Record<Page, number>> = {
+    ...(me?.pending_users ? { users: me.pending_users } : {}),
     queue: rows.filter((r) => isReviewable(r.status)).length,
     jobs: rows.filter((r) => r.tab === "Jobs_Pipeline").length + leftOut.filter((r) => r.tab === "Jobs_Quarantine").length,
     pipeline: rows.length,
@@ -33,7 +37,7 @@ export function Rail({ page, campaignCount, runningCount, onToggle, onNavigate }
         <span className="mark" aria-hidden="true">O</span><span>Outreach Console</span>
         {onToggle && <button type="button" className="burger rail-burger" onClick={onToggle} aria-label="Hide menu"><span /><span /><span /></button>}
       </div>
-      {PAGES.map((p) => (
+      {PAGES.filter((p) => !hide.includes(p)).map((p) => (
         <Fragment key={p}>
           {GROUP_BEFORE[p] && <div className="navlbl">{GROUP_BEFORE[p]}</div>}
           <a className={`nav${page === p ? " active" : ""}`} href={`#${p}`} onClick={onNavigate} aria-current={page === p ? "page" : undefined}>
@@ -41,6 +45,13 @@ export function Rail({ page, campaignCount, runningCount, onToggle, onNavigate }
           </a>
         </Fragment>
       ))}
+      {accounts && me && (
+        <div className="who">
+          <div className="t">{me.user.full_name}</div>
+          <div className="s">{me.user.role === "admin" ? "Administrator" : "Member"}</div>
+          <button type="button" className="btn sm" onClick={() => void signOut()}>Sign out</button>
+        </div>
+      )}
       <div className="foot">
         <b>Google Sheet</b><br />
         {syncedAt ? `Last sync ${sinceText(new Date(syncedAt).toISOString())}` : "Not synced yet"}<br />

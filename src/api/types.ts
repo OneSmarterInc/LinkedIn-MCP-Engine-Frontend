@@ -57,7 +57,19 @@ export interface Summary {
 }
 
 /** GET /api/health */
-export interface Health { ok: boolean; sheet: boolean; auth: boolean }
+export interface Health { ok: boolean; sheet: boolean; auth: boolean; accounts?: boolean; mail?: boolean }
+
+// ---- accounts (SUPERUSER_EMAIL mode) ----
+export type Role = "admin" | "member";
+export interface AuthUser {
+  id: string; email: string; full_name: string; role: Role; status: "pending" | "active" | "disabled";
+  two_factor: boolean; created_at: string; approved_at: string | null; last_sign_in_at: string | null;
+  superuser?: boolean; approved_by?: string | null;
+}
+/** GET /api/auth/me */
+export interface Me { stage: "password" | "enroll" | "full"; user: AuthUser; superuser: boolean; pending_users?: number }
+export type LoginNext = { next: "totp" } | { next: "enroll"; otpauth_url: string; secret: string };
+export interface AuditRow { id: number; at: string; actor: string; action: string; target: string | null; detail: string | null; ip: string | null }
 
 /** src/core/jobs/job-search.ts → JobView */
 export interface JobView {
