@@ -15,6 +15,7 @@ const EMAIL_SOURCE: Record<string, string> = {
   not_found: "Seamless found no one",
   lookup_limit: "Not looked up: the Seamless limit for this run was reached",
   seamless_off: "Not looked up: Seamless is off",
+  lookup_error: "Seamless lookup failed: tried again next run",
 };
 
 const DRAFT: Record<string, [label: string, tone: "ok" | "warn" | "bad"]> = {
