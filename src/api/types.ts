@@ -29,6 +29,9 @@ export interface PipelineRow {
   send_state?: string;
   notes?: string;
   sent_at?: string;
+  /** When the person last answered, and the first lines of that answer (AutoBooker columns M and P). */
+  last_reply_at?: string;
+  last_reply?: string;
 }
 
 /** src/api/services/sheet-rows.ts → QuarantineRow ("left out") */

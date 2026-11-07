@@ -11,7 +11,7 @@ import { useToast } from "./ToastContext";
  * shown in the rail, and the latest job search (for "Seamless credits today").
  */
 
-type Action = "approve" | "reject" | "reopen";
+type Action = "approve" | "reject" | "reopen" | "meetingBooked" | "notInterested";
 
 interface Data {
   rows: PipelineRow[];
@@ -44,6 +44,8 @@ const DONE: Record<Action, (email: string) => string> = {
   approve: (email) => `Approved. Status written to the Sheet; AutoBooker sends to ${email} within 15 minutes.`,
   reject: () => "Rejected. Nothing will be sent.",
   reopen: () => "Back to Ready for Review. Nothing will be sent until it is approved again.",
+  meetingBooked: (email) => `Marked meeting booked for ${email}.`,
+  notInterested: (email) => `Marked not interested. AutoBooker leaves the thread with ${email} alone.`,
 };
 
 export function DataProvider({ children }: { children: ReactNode }) {

@@ -16,6 +16,7 @@ import { JobsPage } from "./pages/JobsPage";
 import { PipelinePage } from "./pages/PipelinePage";
 import { QueuePage } from "./pages/QueuePage";
 import { RunsPage } from "./pages/RunsPage";
+import { SentPage } from "./pages/SentPage";
 import { UsersPage } from "./pages/UsersPage";
 import { ADMIN_PAGES, PAGE_INFO, PAGES } from "./pages/routes";
 
@@ -162,13 +163,14 @@ function Console() {
         <Topbar
           navOpen={navOpen} onToggleNav={toggleNav}
           title={info.title} subtitle={info.subtitle}
-          query={query} onQuery={setQuery} showSearch={page === "jobs" || page === "pipeline"}
+          query={query} onQuery={setQuery} showSearch={page === "jobs" || page === "pipeline" || page === "sent"}
           showRefresh={page !== "users"}
           onRefresh={() => refresh(true)}
         />
         <main className="content">
           {page === "jobs" && <JobsPage query={query} />}
           {page === "queue" && <QueuePage />}
+          {page === "sent" && <SentPage query={query} />}
           {page === "pipeline" && <PipelinePage query={query} />}
           {page === "campaigns" && <CampaignsPage />}
           {page === "runs" && <RunsPage onRunning={setRunningCount} />}

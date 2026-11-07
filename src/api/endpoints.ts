@@ -43,6 +43,8 @@ export const api = {
   approve: (email: string) => request<PipelineRow>("POST", `/api/pipeline/${e(email)}/approve`),
   reject: (email: string) => request<PipelineRow>("POST", `/api/pipeline/${e(email)}/reject`),
   reopen: (email: string) => request<PipelineRow>("POST", `/api/pipeline/${e(email)}/reopen`),
+  meetingBooked: (email: string) => request<PipelineRow>("POST", `/api/pipeline/${e(email)}/outcome`, { outcome: "meeting_booked" }),
+  notInterested: (email: string) => request<PipelineRow>("POST", `/api/pipeline/${e(email)}/outcome`, { outcome: "not_interested" }),
   saveDraft: (email: string, patch: { subject?: string; body?: string }) =>
     request<PipelineRow>("PATCH", `/api/pipeline/${e(email)}/draft`, patch),
 

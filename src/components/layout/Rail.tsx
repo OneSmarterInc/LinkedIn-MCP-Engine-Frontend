@@ -1,12 +1,14 @@
-import { Fragment, type ReactElement } from "react";
+import { Fragment, useEffect, useState, type ReactElement } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useData } from "../../context/DataContext";
 import { sinceText } from "../../utils/format";
 import { isReviewable } from "../../utils/jobs";
+import { isNewReply, SEEN_EVENT, seenAt } from "../../utils/sent";
 import { PAGE_INFO, PAGES, type Page } from "../../pages/routes";
 
 const ICONS: Record<Page, ReactElement> = {
   queue: <svg viewBox="0 0 20 20"><path d="M3 11l2.5-6h9L17 11v5H3z"/><path d="M3 11h4l1.5 2h3L13 11h4"/></svg>,
+  sent: <svg viewBox="0 0 20 20"><path d="M3 10l14-6-5 13-2.5-5.5z"/><path d="M9.5 11.5L17 4"/></svg>,
   jobs: <svg viewBox="0 0 20 20"><rect x="3" y="6" width="14" height="10" rx="2"/><path d="M7 6V4.5A1.5 1.5 0 018.5 3h3A1.5 1.5 0 0113 4.5V6M3 10h14"/></svg>,
   pipeline: <svg viewBox="0 0 20 20"><path d="M4 5h12M4 10h12M4 15h8"/><circle cx="16" cy="15" r="1.5"/></svg>,
   campaigns: <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.5"/><circle cx="10" cy="10" r="3"/><circle cx="10" cy="10" r=".8"/></svg>,
@@ -20,9 +22,14 @@ const GROUP_BEFORE: Partial<Record<Page, string>> = { queue: "Work", campaigns: 
 export function Rail({ page, campaignCount, runningCount, onToggle, onNavigate, hide = [] }: { page: Page; campaignCount?: number; runningCount?: number; onToggle?: () => void; onNavigate?: () => void; hide?: readonly Page[] }) {
   const { rows, leftOut, settings, syncedAt } = useData();
   const { me, accounts, signOut } = useAuth();
+  // New replies since this browser last opened Sent & replies; the page marks them seen.
+  const [since, setSince] = useState(seenAt);
+  useEffect(() => { const on = () => setSince(seenAt()); window.addEventListener(SEEN_EVENT, on); return () => window.removeEventListener(SEEN_EVENT, on); }, []);
+  const newReplies = rows.filter((r) => isNewReply(r, since)).length;
   const counts: Partial<Record<Page, number>> = {
     ...(me?.pending_users ? { users: me.pending_users } : {}),
     queue: rows.filter((r) => isReviewable(r.status)).length,
+    ...(newReplies ? { sent: newReplies } : {}),
     jobs: rows.filter((r) => r.tab === "Jobs_Pipeline").length + leftOut.filter((r) => r.tab === "Jobs_Quarantine").length,
     pipeline: rows.length,
     ...(campaignCount !== undefined ? { campaigns: campaignCount } : {}),
