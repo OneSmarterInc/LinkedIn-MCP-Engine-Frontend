@@ -79,6 +79,10 @@ export function UsersPage() {
           </>}
           {u.status === "active" && u.superuser && !self && u.role !== "admin" && <button className="btn sm" disabled={!!busy} onClick={() => void act(u.id, "make admin", () => api.setRole(u.id, "admin"))}>Make admin</button>}
           {u.status === "disabled" && <button className="btn sm" disabled={!!busy} onClick={() => void act(u.id, "enable", () => api.enableUser(u.id))}>Enable</button>}
+          {u.status === "active" && !self && u.two_factor && <>{" "}
+            <button className="btn sm" disabled={!!busy} title="Lost phone: their next sign-in shows a new QR code"
+              onClick={() => { if (confirm(`Reset two-factor for ${u.email}? They are signed out and set up their authenticator again at the next sign-in.`)) void act(u.id, "reset two-factor", () => api.resetTwoFactor(u.id)); }}>Reset two-factor</button>
+          </>}
         </td>
       </tr>
     );

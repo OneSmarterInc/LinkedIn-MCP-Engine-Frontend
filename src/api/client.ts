@@ -44,7 +44,9 @@ export async function request<T>(method: "GET" | "POST" | "PUT" | "PATCH", path:
   let data: unknown;
   try { data = text ? JSON.parse(text) : undefined; } catch { data = undefined; }
 
-  if (res.status === 401) {
+  // A 401 from the sign-in steps themselves is a wrong password or code, shown on that screen: not a "session ended".
+  const signInStep = /^\/api\/auth\/(login|2fa\/|register|forgot|reset)/.test(path);
+  if (res.status === 401 && !signInStep) {
     // The saved token is no longer accepted: forget it and send the app back to the sign-in box.
     setToken("");
     window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));

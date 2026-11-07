@@ -30,6 +30,7 @@ export const api = {
   rejectUser: (id: string, reason?: string) => request<{ ok: true }>("POST", `/api/users/${id}/reject`, { reason }),
   disableUser: (id: string) => request<{ user: AuthUser }>("POST", `/api/users/${id}/disable`, {}),
   enableUser: (id: string) => request<{ user: AuthUser }>("POST", `/api/users/${id}/enable`, {}),
+  resetTwoFactor: (id: string) => request<{ user: AuthUser }>("POST", `/api/users/${id}/reset-2fa`, {}),
   setRole: (id: string, role: Role) => request<{ user: AuthUser }>("POST", `/api/users/${id}/role`, { role }),
   audit: (limit = 100) => request<{ rows: AuditRow[] }>("GET", `/api/audit?limit=${limit}`),
 
